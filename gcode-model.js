@@ -1,5 +1,10 @@
 var bbbox = { min: { x:10000,y:10000,z:10000}, max: { x:-10000,y:-10000,z:-10000} };
 var ebbox = { min: { x:10000,y:10000,z:10000}, max: { x:-10000,y:-10000,z:-10000} };
+var build_env = {
+  material_size: 0,
+  max_dim: 0,
+  height: 0
+};
 var extruder_value = false;
 var instructions = [];
 
@@ -45,11 +50,17 @@ function createGeometryFromGCode(gcode) {
     var dz = delta(p1.z, p2.z);
     var move_distance = Math.sqrt(dx*dx + dy*dy + dz*dz);
 
+    if(build_env.material_size == 0 && dz > 0){
+      build_env.material_size = dz;
+    }
+
+    if(build_env.material_size != 0 && dz != 0 &&  dz != build_env.material_size)
+      console.log("ERROR: Material Size Mismatch :"+build_env.material_size+" != "+dz);
 
     var obj = {
       to: p2,
       speed:s,
-      coords: {dx: dx, dy:dy, dz:dz},	
+      coords: {dx: dx, dy:dy, dz:dz},  
       d_traveling: move_distance,
       d_extruding: e,
     }
@@ -489,14 +500,14 @@ function deg_to_rad(x){
 
 
 //to do figure out why microseconds isn't writing the full range
-function toMicroseconds(layer_id, material_height,x, y, ctr, height, max_dim){
+function toMicroseconds(layer_id,x, y){ 
   //make sure to account for material height here. 
-  var adj_height = height - (layer_id)*material_height;
+  var adj_height = build_env.height - (layer_id)*build_env.material_size;
 
 
   var theta = {
-    x: rad_to_deg(Math.atan((x - ctr.x)/adj_height)) +  90,
-    y: rad_to_deg(Math.atan((y - ctr.y)/adj_height)) +  90.
+    x: rad_to_deg(Math.atan((x - build_env.ctr.x)/adj_height)) +  90,
+    y: rad_to_deg(Math.atan((y - build_env.ctr.y)/adj_height)) +  90.
   };  
 
     if(theta.x > 110 || theta.x < 80){
@@ -520,51 +531,72 @@ function toMicroseconds(layer_id, material_height,x, y, ctr, height, max_dim){
   return ms;  
 }
 
-function computeBounds(xs, ys, ls){
-  var bounds = {
-    max:{x: -10000, y:-10000},
-    min:{x: 10000,  y:10000}
-  };
+//run this to delete any badly formed or multiple instructions
+//when printing to arduino
+function cleanInstructions(){
+  var cleaned = [];
+  var last;
+  for(var l in instructions){
+    cleaned[l] = [];
+    for(var i in instructions[l]){
+      var inst = instructions[l][i];
+      var moved = (last != undefined && last.x != inst.coord.x && last.y != inst.coord.y);
 
-  for(var i in xs){
-    if(ls[i] == 1){
-      if(xs[i] > bounds.max.x) bounds.max.x = xs[i];
-      if(xs[i] < bounds.min.x) bounds.min.x = xs[i];
-      if(ys[i] > bounds.max.y) bounds.max.y = ys[i];
-      if(ys[i] < bounds.min.y) bounds.min.y = ys[i];
+      if(inst.type == "G1"){
+        if(moved){
+          inst.obj.microseconds =  toMicroseconds(l, inst.coord.x, inst.coord.y);
+          if(inst.obj.microseconds.x == last.microseconds.x && inst.obj.microseconds.y == last.microseconds.y && last.ext == inst.ext)
+            console.log("Duplicate instruction at "+l+" "+i);
+          else
+            cleaned[l].push(inst);
+          last.x = inst.coord.x;
+          last.y = inst.coord.y;
+          last.ext = inst.ext;
+          last.microseconds = inst.obj.microseconds; 
+        }
+      }else{
+        cleaned[l].push(instructions[l][i]);
+      } 
     }
   }
+  
+  for(var i in cleaned){
+    console.log(cleaned[i].length);
+  }
 
-  return bounds;
+
+  console.log("Cleaned "+(cleaned.length)+" instructions");
+  instructions = cleaned;
 }
-function createInstructions(){
+
+function createArduinoInstructions(){
   var last = {x:ebbox.min.x, y:ebbox.min.y,z:ebbox.min.z,  ext:false};
   var ilist = {
     xs:[],
     ys:[],
     ls:[],
-    layer_ids:[],
-    material_size: 0
-  };
+    msx:[],
+    msy:[],
+    layer_ids:[]};
 
   //go through and make the instructions
   for(var l in instructions){
     for(var i in instructions[l]){
       var inst = instructions[l][i];
-      var moved = (last.x != inst.coord.x && last.y != inst.coord.y);
 
       if(inst.type == "G1"){
-        if(moved){
-          if(last.z != inst.coord.z) ilist.material_size = last.z - inst.coord.z; 
-          ilist.layer_ids.push(l);
-          ilist.xs.push(inst.coord.x);
-          ilist.ys.push(inst.coord.y);
-          if(last.ext == true){
-            ilist.ls.push(1);
-          }else{
-            ilist.ls.push(0);
-          }
-        } 
+        ilist.layer_ids.push(l);
+        ilist.xs.push(inst.coord.x);
+        ilist.ys.push(inst.coord.y);
+        inst.obj.microseconds = toMicroseconds(l, inst.coord.x, inst.coord.y);
+        ilist.msx.push(inst.obj.microseconds.x);
+        ilist.msy.push(inst.obj.microseconds.y);
+        if(last.ext == true){
+          ilist.ls.push(1);
+        }else{
+          ilist.ls.push(0);
+        }
+        
         last.x = inst.coord.x;
         last.y = inst.coord.y;
         last.z = inst.coord.z;
@@ -575,53 +607,27 @@ function createInstructions(){
    return ilist;
 }
 
-function getHeight(material_size, max_dim, num_layers){
-  var z_dims = {
-    dist_to_top_layer: (max_dim/2.) / Math.tan(deg_to_rad(10)),
-  };
-  z_dims.height = z_dims.dist_to_top_layer + material_size*num_layers
 
-  return z_dims;
-}
-
-function setupEnvironment(ilist){
-  var env = {};
-  env.material_size = ilist.material_size;
-  env.bounds = computeBounds(ilist.xs, ilist.ys, ilist.ls);
-  env.dim = {x: env.bounds.max.x - env.bounds.min.x, y: env.bounds.max.y - env.bounds.min.y};
-  env.ctr = {x: env.bounds.min.x + env.dim.x/2., y: env.bounds.min.y + env.dim.y/2.};
-  env.max_dim = (env.dim.x > env.dim.y) ? env.dim.x: env.dim.y;
-  var z_dims  = getHeight(ilist.material_size, env.max_dim, ilist.layer_ids[ilist.layer_ids.length - 1]);
-  env.height = z_dims.height;
-  env.model_height = z_dims.height - z_dims.dist_to_top_layer;
-  return env;
-
-}
-
-function getArduinoData(){
-  var env = setupEnvironment(createInstructions());
-  return env;
+function setupEnvironment(){
+  build_env.dim = {x: ebbox.max.x - ebbox.min.x, y: ebbox.max.y - ebbox.min.y};
+  build_env.ctr = {x: ebbox.min.x + build_env.dim.x/2., y: ebbox.min.y + build_env.dim.y/2.};
+  build_env.max_dim = (build_env.dim.x > build_env.dim.y) ? build_env.dim.x: build_env.dim.y;
+  var dist_to_top_layer = (build_env.max_dim/2.) / Math.tan(deg_to_rad(10));
+  build_env.height = dist_to_top_layer + build_env.material_size*(instructions.length+1);
+  build_env.model_height = build_env.height - dist_to_top_layer;
 }
 
 function getArduinoFile(){
   var lines = [];
-  var ilist = createInstructions(); 
-  ilist.msx = [];
-  ilist.msy = [];
-  var env = setupEnvironment(ilist); 
-    for(i in ilist.xs){
-    var ms = toMicroseconds(ilist.layer_ids[i], ilist.material_size, ilist.xs[i], ilist.ys[i], env.ctr, env.height, env.max_dim);
-    ilist.msx.push(parseInt(ms.x));
-    ilist.msy.push(parseInt(ms.y));
-  }
+  var ilist = createArduinoInstructions(); 
 
 
   
-  console.log("Model Width = "+env.dim.x);
-  console.log("Model Height= "+env.dim.y);
-  console.log("Dist To Base = "+env.height);
-  console.log("Material Size = "+ilist.material_size);
-  console.log("Model Height = "+env.model_height);
+  console.log("Model Width = "+build_env.dim.x);
+  console.log("Model Height= "+build_env.dim.y);
+  console.log("Dist To Base = "+build_env.height);
+  console.log("Material Size = "+build_env.material_size);
+  console.log("Model Height = "+build_env.model_height);
   console.log("Model Height from BBOX = "+(ebbox.max.z - ebbox.min.z));
 
   lines.push("int inst_num = "+ilist.xs.length+";")

@@ -196,12 +196,14 @@ function openGCodeFromPath(path) {
 
   loadFile(path, function(gcode) {
     createGeometryFromGCode(gcode);
+    setupEnvironment();
+    //cleanInstructions();
     scene2d.add(instructions);
-
+    
     if(hasGL){
-    object = createObjectFromInstructions();
-    createPlane();
-    scene3d.add(object);
+      object = createObjectFromInstructions();
+      createPlane();
+      scene3d.add(object);
     }
 
     var ard_env = getArduinoData();
@@ -224,6 +226,8 @@ function openGCodeFromText(name, gcode) {
     }
   
   createGeometryFromGCode(gcode);
+  setupEnvironment();
+  //cleanInstructions();
   scene2d.add(instructions);
   
   if(hasGL){
@@ -232,9 +236,8 @@ function openGCodeFromText(name, gcode) {
 	  scene3d.add(object);
   }	
 
-    var ard_env = getArduinoData();
-    var m_size = Math.round(ard_env.material_size * 100 ) / 100; 
-    var dist = Math.round(ard_env.height * 100 ) / 100; 
+    var m_size = Math.round(build_env.material_size * 100 ) / 100; 
+    var dist = Math.round(build_env.height * 100 ) / 100; 
     $("#model_filename").text("Filename: "+name);
     $("#model_material_size").text("Material Size: "+m_size+" mm");
     $("#model_laser_distance").text("Distance from Base to Laser: "+dist+" mm");

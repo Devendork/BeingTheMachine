@@ -158,28 +158,31 @@ Scene2D.prototype.add =function(instructions){
 		this.instructions = instructions;	
 
 		var count = 0;
-		
+
 		for(var i in instructions){
 			this.num_per_layer.push(count);
-			count += instructions[i].count();
+			count += instructions[i].length + 1;
 		}
 		this.num_instructions = count;
 
 
 		//scale by bounding box
-		var sx = bbbox.max.x - bbbox.min.x;
-		var sy = bbbox.max.y - bbbox.min.y;
+		var sx = ebbox.max.x - ebbox.min.x;
+		var sy = ebbox.max.y - ebbox.min.y;
+
+    if(this.w > this.h){
+      window_factor = this.h-100;
+      box_factor = sy;
+    } else{
+      window_factor = this.w;
+      box_factor = sx;
+    }
 
 
-		box_factor = (sx > sy ) ? sy : sx;
-		window_factor = (this.w > this.h) ? this.h : this.w;
-		
-		this.scale = (window_factor-this.margin*2) / box_factor; 		
+	  this.scale = (window_factor-this.margin*2) / box_factor; 		
+    this.offset = {x: this.scale*-ebbox.min.x+(this.w - this.scale*sx)/2, 
+                  y:this.scale*-ebbox.min.y+(this.h - this.scale*sy)/2};
 
-		this.offset = {x:-bbbox.min.x + ((this.w - sx*this.scale)/2),
-				y:-bbbox.min.y + ((this.h - sy*this.scale)/4)};
-		
-		//this.text.center(this.w/2, this.h - 2*this.margin/3);
 
 		if(this.line != null) this.line.remove();
 		if(this.circle != null) this.circle.remove();
@@ -192,8 +195,8 @@ Scene2D.prototype.add =function(instructions){
 		
 	
 
-		this.group.translate(this.offset.x, this.offset.y);
-		this.group.scale(this.scale, this.scale);
+    this.group.translate(this.offset.x, this.offset.y);
+    this.group.scale(this.scale, this.scale);
 		this.clearLayerPaths();
 		this.addGhostPaths();
 		this.drawStep({fwd: true, reset:true});
@@ -207,21 +210,27 @@ Scene2D.prototype.resize =function(){
 	}
 
 	this.w = this.element.width();
-	this.h = this.element.height();
+	this.h = this.element.height()-100;
 
 	//scale by bounding box
-	var sx = bbbox.max.x - bbbox.min.x;
-	var sy = bbbox.max.y - bbbox.min.y;
+	var sx = ebbox.max.x - ebbox.min.x;
+	var sy = ebbox.max.y - ebbox.min.y;
+
+    if(this.w > this.h){
+      window_factor = this.h;
+      box_factor = sy;
+    } else{
+      window_factor = this.w;
+      box_factor = sx;
+    }
 
 
-	box_factor = (sx > sy ) ? sy : sx;
-	window_factor = (this.w > this.h) ? this.h : this.w;
+  this.scale = (window_factor-this.margin*2) / box_factor; 		
+  this.offset = {x: this.scale*-ebbox.min.x+(this.w - this.scale*sx)/2, 
+                y:this.scale*-ebbox.min.y+(this.h - this.scale*sy)/2};
 
-	this.scale = (window_factor-this.margin*2) / box_factor; 		
-	this.offset = {x:-bbbox.min.x + ((this.w - sx*this.scale)/2),
-				y:-bbbox.min.y + ((this.h - sy*this.scale)/2)};
-
-	this.group.translate(this.offset.x, this.offset.y);
+	
+  this.group.translate(this.offset.x, this.offset.y);
 	this.group.scale(this.scale, this.scale);
 	this.drawStep({fwd:true, reset:true});
 }
