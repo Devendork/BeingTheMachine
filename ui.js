@@ -196,8 +196,6 @@ function openGCodeFromPath(path) {
 
   loadFile(path, function(gcode) {
     createGeometryFromGCode(gcode);
-    setupEnvironment();
-    //cleanInstructions();
     scene2d.add(instructions);
     
     if(hasGL){
@@ -226,8 +224,6 @@ function openGCodeFromText(name, gcode) {
     }
   
   createGeometryFromGCode(gcode);
-  setupEnvironment();
-  //cleanInstructions();
   scene2d.add(instructions);
   
   if(hasGL){

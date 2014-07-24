@@ -12,6 +12,7 @@ var instructions = [];
 //2D/3D independent
 function createGeometryFromGCode(gcode) {
   instructions = [];
+  layer_heights = [];
   bbbox = { min: { x:10000,y:10000,z:10000}, max: { x:-10000,y:-10000,z:-10000} };
   ebbox = { min: { x:10000,y:10000,z:10000}, max: { x:-10000,y:-10000,z:-10000} };
   extruder_value = false;
@@ -50,12 +51,11 @@ function createGeometryFromGCode(gcode) {
     var dz = delta(p1.z, p2.z);
     var move_distance = Math.sqrt(dx*dx + dy*dy + dz*dz);
 
-    if(build_env.material_size == 0 && dz > 0){
-      build_env.material_size = dz;
+    if(dz > 0){
+        dz = Math.round(dz * 10)/10;
+        if(layer_heights[dz] == undefined) layer_heights[dz] = 0;
+        layer_heights[dz]++;
     }
-
-    if(build_env.material_size != 0 && dz != 0 &&  dz != build_env.material_size)
-      console.log("ERROR: Material Size Mismatch :"+build_env.material_size+" != "+dz);
 
     var obj = {
       to: p2,
@@ -395,8 +395,113 @@ function createGeometryFromGCode(gcode) {
     },
   });
 
+  
   parser.parse(gcode);
-  console.log("bbox ", bbbox);
+  setupEnvironment(layer_heights);
+
+  for(l in instructions){
+    for(i in instructions[l]){
+      var inst = instructions[l][i];
+      if(inst.type == "G1"){ 
+        inst.obj.microseconds = toMicroseconds(l, inst.coord.x, inst.coord.y);
+        inst.obj.adj = fromMicroseconds(l, inst.obj.microseconds.x, inst.obj.microseconds.y);
+      }
+    }
+  }
+
+  cleanInstructions(instructions);
+
+}
+
+function setupEnvironment(layer_heights){
+  var most = 0
+  var count = 0;
+  if(layer_heights.length > 1) 
+  for(var i in layer_heights){
+    count++;
+    if(layer_heights[i] > most){
+      most = layer_heights[i];
+      build_env.material_size = i;
+    }
+  }
+  if(count > 1) 
+      console.log("ERROR: Multiple Layer Heights Detected, Using Most Common For Printing");
+  console.log("Material size is "+build_env.material_size);
+
+  
+  build_env.dim = {x: ebbox.max.x - ebbox.min.x, y: ebbox.max.y - ebbox.min.y};
+  build_env.ctr = {x: ebbox.min.x + build_env.dim.x/2., y: ebbox.min.y + build_env.dim.y/2.};
+  build_env.max_dim = (build_env.dim.x > build_env.dim.y) ? build_env.dim.x: build_env.dim.y;
+  var dist_to_top_layer = (build_env.max_dim/2.) / Math.tan(deg_to_rad(10));
+  build_env.height = dist_to_top_layer + build_env.material_size*(instructions.length+1);
+  build_env.model_height = build_env.height - dist_to_top_layer;
+}
+
+function isValidDistance(p1, p2, d){
+  dx = Math.abs(p1.x - p2.x);
+  dy = Math.abs(p1.y - p2.y);
+  h = dx*dx + dy*dy;
+  
+  return (h > d);
+
+}
+
+//run this to delete any badly formed or multiple instructions
+//when printing to arduino
+function cleanInstructions(to_clean){
+  instructions = [];
+  var mat2 = build_env.material_size*build_env.material_size/4;
+
+  for(var l in to_clean){
+    var layer = [];
+    var path = [];
+    var inst = undefined;
+    var last = undefined;
+    for(var i in to_clean[l]){
+      inst = to_clean[l][i];
+      
+      if(inst.type == "G1"){
+        if(last != undefined){
+          //the head is at last and going to inst
+          if(!last.ext && inst.ext){
+            layer.push(path[0]); //if it isn't extruding and has more than one element, simplify
+
+            path = [];
+            path.push(inst);
+            
+          
+          }else if(last.ext && !inst.ext){
+            if(isValidDistance(path[0].obj.adj, inst.obj.adj, mat2)){
+              layer.push(path[0]);
+            }
+
+            path = [];
+            path.push(inst);
+
+          }else if(last.ext && inst.ext){
+            //check to see if we've moved far enough
+            
+            if(isValidDistance(inst.obj.adj, path[0].obj.adj, mat2)){
+              layer.push(path[0]);
+              path = [];
+              path.push(inst);
+            }
+         
+          }else{
+            path.push(inst);
+          }
+        }
+        
+        path.push(inst);
+        last = inst;
+      }
+    }
+    layer.push(inst);
+
+
+    instructions.push(layer);
+  }
+   
 }
 
 function createObjectFromInstructions() {
@@ -404,8 +509,8 @@ function createObjectFromInstructions() {
   var layers = [];
   var layer = undefined;
 
-  function newLayer(line) {
-    layer = { type: {}, layer: layers.count(), z: line.z, };
+  function newLayer(z) {
+    layer = { type: {}, layer: layers.count(), z: z};
     layers.push(layer);
   }
 
@@ -444,21 +549,22 @@ function createObjectFromInstructions() {
   }
 
   for(var l in instructions){
-    var has_draw = false;
-    for(var ndx in instructions[l]){
-      var i = instructions[l][ndx];
-      var p1 = i.coord;
-      if(i.ext){
-        var p2 = i.obj.to;
-        addSegment(i, p1, p2);
-        if(!has_draw){
-          newLayer(p2);
-          has_draw = true;
+    if(instructions[l].length > 0){
+      newLayer(instructions[l][instructions[l].length-1].coord); 
+      var last = undefined;
+      var inst;
+      for(var i in instructions[l]){
+        inst = instructions[l][i];
+        if(last != undefined){
+          var p1 = last.coord; //where it's at
+          var p2 = inst.coord; //where it's going once the instruction executes
+
+          if(last.ext) addSegment(inst, p1, p2);
         }
+        last = inst;
       }
     }
   }
-
 
   console.log("Layer Count ", layers.count());
 
@@ -498,11 +604,36 @@ function deg_to_rad(x){
   return  x * Math.PI / 180;
 }
 
+//to do figure out why microseconds isn't writing the full range
+function fromMicroseconds(layer_id,x, y){ 
+  var ms_per_theta = 10;
+  var min_ms = 800;
+  var adj_height = build_env.height - (layer_id)*build_env.material_size;
+  
+  var theta = {
+    x: (min_ms+x)/ms_per_theta,
+    y: (min_ms+y)/ms_per_theta 
+  };
+
+  var coord = {
+    x: adj_height * Math.tan(deg_to_rad(theta.x - 90)) + build_env.ctr.x,
+    y: adj_height * Math.tan(deg_to_rad(theta.y - 90)) + build_env.ctr.y
+  }
+
+
+  return coord;  
+}
+
 
 //to do figure out why microseconds isn't writing the full range
 function toMicroseconds(layer_id,x, y){ 
   //make sure to account for material height here. 
   var adj_height = build_env.height - (layer_id)*build_env.material_size;
+
+  if(layer_id == 0 && x == 0 && y == 0){ //assume this is a starting block
+    x = ebbox.min.x;
+    y = ebbox.min.y;
+  }
 
 
   var theta = {
@@ -512,6 +643,7 @@ function toMicroseconds(layer_id,x, y){
 
     if(theta.x > 110 || theta.x < 80){
     console.log("Error - theta out of range: "+theta.x );
+    console.log(ebbox.min.x, x);
   }
 
   var ms_per_theta = 10;
@@ -529,44 +661,6 @@ function toMicroseconds(layer_id,x, y){
 
 
   return ms;  
-}
-
-//run this to delete any badly formed or multiple instructions
-//when printing to arduino
-function cleanInstructions(){
-  var cleaned = [];
-  var last;
-  for(var l in instructions){
-    cleaned[l] = [];
-    for(var i in instructions[l]){
-      var inst = instructions[l][i];
-      var moved = (last != undefined && last.x != inst.coord.x && last.y != inst.coord.y);
-
-      if(inst.type == "G1"){
-        if(moved){
-          inst.obj.microseconds =  toMicroseconds(l, inst.coord.x, inst.coord.y);
-          if(inst.obj.microseconds.x == last.microseconds.x && inst.obj.microseconds.y == last.microseconds.y && last.ext == inst.ext)
-            console.log("Duplicate instruction at "+l+" "+i);
-          else
-            cleaned[l].push(inst);
-          last.x = inst.coord.x;
-          last.y = inst.coord.y;
-          last.ext = inst.ext;
-          last.microseconds = inst.obj.microseconds; 
-        }
-      }else{
-        cleaned[l].push(instructions[l][i]);
-      } 
-    }
-  }
-  
-  for(var i in cleaned){
-    console.log(cleaned[i].length);
-  }
-
-
-  console.log("Cleaned "+(cleaned.length)+" instructions");
-  instructions = cleaned;
 }
 
 function createArduinoInstructions(){
@@ -588,7 +682,6 @@ function createArduinoInstructions(){
         ilist.layer_ids.push(l);
         ilist.xs.push(inst.coord.x);
         ilist.ys.push(inst.coord.y);
-        inst.obj.microseconds = toMicroseconds(l, inst.coord.x, inst.coord.y);
         ilist.msx.push(inst.obj.microseconds.x);
         ilist.msy.push(inst.obj.microseconds.y);
         if(last.ext == true){
@@ -608,15 +701,6 @@ function createArduinoInstructions(){
 }
 
 
-function setupEnvironment(){
-  build_env.dim = {x: ebbox.max.x - ebbox.min.x, y: ebbox.max.y - ebbox.min.y};
-  build_env.ctr = {x: ebbox.min.x + build_env.dim.x/2., y: ebbox.min.y + build_env.dim.y/2.};
-  build_env.max_dim = (build_env.dim.x > build_env.dim.y) ? build_env.dim.x: build_env.dim.y;
-  var dist_to_top_layer = (build_env.max_dim/2.) / Math.tan(deg_to_rad(10));
-  build_env.height = dist_to_top_layer + build_env.material_size*(instructions.length+1);
-  build_env.model_height = build_env.height - dist_to_top_layer;
-}
-
 function getArduinoFile(){
   var lines = [];
   var ilist = createArduinoInstructions(); 
@@ -631,9 +715,9 @@ function getArduinoFile(){
   console.log("Model Height from BBOX = "+(ebbox.max.z - ebbox.min.z));
 
   lines.push("int inst_num = "+ilist.xs.length+";")
-  lines.push("PROGMEM prog_uchar xs[] = {"+ilist.msx.join(",")+"};")
-  lines.push("PROGMEM prog_uchar ys[] = {"+ilist.msy.join(",")+"};")
-  lines.push("PROGMEM prog_uchar ls[] = {"+ilist.ls.join(",")+"};")
+  lines.push("const PROGMEM uint8_t xs[] = {"+ilist.msx.join(",")+"};")
+  lines.push("const PROGMEM uint8_t ys[] = {"+ilist.msy.join(",")+"};")
+  lines.push("const PROGMEM uint8_t ls[] = {"+ilist.ls.join(",")+"};")
   return lines;  
 }
 
