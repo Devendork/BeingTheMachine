@@ -34,6 +34,7 @@ GCodeParser.prototype.parseLine = function(text, info) {
 GCodeParser.prototype.parse = function(gcode) {
   var lines = gcode.split('\n');
   for (var i = 0; i < lines.length; i++) {
+    //console.log(lines[i]);
     if (this.parseLine(lines[i], i) === false) {
       break;
     }
