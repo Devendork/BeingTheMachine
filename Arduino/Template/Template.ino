@@ -1,18 +1,17 @@
-//// Values generated for Filename: tester2.gcode
-//// Generated 7-28-14
 //////////////////
 //Laura Devendorf
 //Being the Mahcine
 //Arduino Uno Code for Guided 3D Printing
+//Updated: 7/31/14
 ////////////////
 #include <Servo.h>
 #include <avr/pgmspace.h>
 
-///**BEGIN INSERTED VALUES///// 
-int inst_num = 1146;
-const PROGMEM uint8_t xs[] = {33,80,96,128,140,149,158,148,124,108,83,79,95,97,101,107,113,119,125,134,140,141,142,144,145,145,145,141,138,133,128,123,116,106,98,100,101,101,100,96,87,84,85,87,91,96,102,109,115,121,127,134,141,148,150,151,152,154,155,155,156,155,152,148,143,137,131,126,121,115,107,101,93,81,74,70,57,68,79,86,89,90,91,90,87,77,75,74,75,76,80,84,89,94,99,106,112,118,125,132,138,144,150,154,158,161,162,163,165,166,165,166,166,165,162,158,154,150,145,141,135,130,125,119,112,105,98,91,84,81,82,79,74,67,61,56,56,61,60,55,50,46,45,49,54,59,66,71,76,79,79,80,78,134,137,71,70,79,74,59,72,77,83,87,89,92,95,95,94,96,101,106,111,116,122,128,134,140,153,153,155,157,158,158,158,158,155,152,146,141,133,127,121,112,107,101,94,89,80,89,87,86,82,77,71,65,63,66,67,65,60,53,49,49,51,58,63,68,73,77,80,82,84,84,83,84,87,91,96,102,107,114,120,127,134,140,146,153,158,162,164,164,166,168,168,169,168,168,167,165,162,159,155,151,146,139,133,126,120,115,108,101,95,90,125,138,148,136,91,81,85,80,74,71,70,82,77,73,62,68,73,80,84,88,91,94,97,98,98,102,107,112,118,125,131,140,146,152,156,158,158,158,157,153,150,147,142,135,128,121,115,110,105,98,90,83,94,92,88,82,76,69,67,69,69,66,62,56,52,51,53,56,61,69,75,78,81,84,87,86,87,90,94,100,107,112,120,126,132,138,144,151,156,161,164,166,168,169,169,168,168,166,163,160,157,152,147,142,136,130,124,118,114,107,101,95,131,142,129,84,75,84,89,77,80,80,83,78,75,72,69,65,62,67,73,79,84,88,92,95,99,100,102,106,110,116,122,128,134,140,148,153,155,155,156,155,152,150,145,140,133,125,118,114,107,101,96,92,89,84,86,79,72,69,68,67,64,60,56,53,52,54,58,63,69,75,79,82,84,88,90,91,94,98,103,109,115,123,131,137,143,150,155,160,163,165,167,166,166,166,164,161,160,156,153,148,143,137,130,124,120,114,108,103,100,98,94,88,133,146,92,92,84,84,76,81,81,76,81,86,91,95,99,103,106,109,113,119,128,136,143,149,151,152,152,150,147,144,139,132,125,118,113,108,101,96,93,91,85,80,76,70,66,63,62,63,67,74,70,76,81,85,88,92,95,98,101,106,113,118,124,130,137,143,151,156,159,162,163,164,163,161,159,156,151,146,140,132,127,122,116,109,105,103,101,95,88,80,73,68,65,60,56,54,51,50,51,52,55,60,69,85,129,139,139,145,146,146,142,137,130,124,119,114,107,102,96,92,87,79,74,69,63,60,57,59,65,72,78,86,92,99,103,108,111,118,123,130,138,142,147,152,156,157,159,157,156,153,148,144,134,128,122,116,111,107,105,101,96,90,85,79,73,68,62,56,53,49,47,46,47,49,52,58,64,70,76,82,90,94,99,104,110,116,121,128,140,134,129,123,115,120,110,105,105,106,102,98,94,90,85,78,71,65,59,55,54,54,56,64,71,79,85,91,97,102,108,113,117,123,139,137,135,128,123,118,107,117,113,110,105,101,95,88,82,75,68,60,55,50,46,42,42,42,46,51,58,66,76,83,90,95,99,103,108,113,119,126,132,138,144,148,149,148,146,144,139,134,128,118,70,126,127,89,93,92,88,85,81,73,67,60,53,49,47,50,57,62,71,78,87,95,100,102,104,106,103,99,95,90,85,76,67,60,54,48,44,40,37,35,35,38,42,50,55,61,68,76,84,92,93,96,101,104,107,107,105,100,96,91,85,79,73,65,56,50,44,38,33,30,27,25,25,27,30,35,40,47,53,60,68,76,83,94,88,65,33,32,37,43,47,55,61,68,75,84,89,95,97,97,95,92,88,84,77,70,62,54,45,40,37,32,32,21,25,29,33,37,44,52,58,66,75,83,89,95,102,106,109,109,109,107,104,101,96,90,83,74,67,58,52,45,38,31,29,26,21,19,20,60,79,85,79,72,65,58,52,44,37,34,32,30,32,36,41,44,48,54,65,73,81,87,92,97,98,96,94,86,95,87,80,74,65,57,49,40,33,28,23,22,19,17,18,20,24,29,33,37,41,50,60,69,77,85,91,97,103,109,111,111,109,107,104,96,45,42,41,38,36,38,42,46,55,62,69,77,84,88,93,95,96,93,87,80,73,65,57,50,40,41,28,25,24,22,24,31,35,40,43,43,52,59,71,79,87,94,98,103,106,108,109,110,113,106,99,89,81,74,67,58,51,43,35,28,22,25,28,26,55,52,56,60,69,76,78,72,57,52,43,41,38,38,44,48,54,63,74,80,87,90,93,91,85,78,70,60,53,47,38,31,29,27,24,23,26,31,36,42,46,55,62,69,79,85,92,99,102,106,111,118,107,100,93,87,78,68,61,50,48,57,46,44,46,49,59,70,76,80,86,79,72,58,52,43,36,32,32,30,30,33,36,40,43,53,60,70,78,84,90,94,100,116,100,93,87,80,73,64,54,31,38,49,59,58,59,77};
-const PROGMEM uint8_t ys[] = {32,65,47,37,40,51,94,116,139,134,115,67,69,63,58,54,52,52,52,52,52,58,65,71,79,86,93,98,103,107,110,112,113,113,113,105,98,90,82,70,76,69,63,58,52,48,45,43,41,41,42,42,42,45,50,56,63,68,74,82,88,96,101,107,112,117,120,122,124,124,124,123,123,124,132,139,127,124,122,113,106,98,91,84,77,81,76,69,62,55,49,44,41,37,35,32,31,31,31,31,31,32,33,37,42,47,54,61,68,74,81,88,94,100,105,111,116,120,124,128,130,132,134,135,134,134,134,134,137,143,154,162,165,168,168,164,157,150,144,141,139,135,129,124,119,115,114,112,109,103,97,88,82,95,84,155,156,142,134,122,118,116,112,106,100,91,85,77,70,63,59,56,53,51,50,50,50,51,50,57,64,69,76,82,88,94,103,109,115,119,120,119,119,121,125,127,129,132,140,146,153,159,163,165,166,164,159,151,145,140,136,135,131,125,120,113,110,108,106,102,95,87,81,75,69,63,58,54,49,46,43,41,40,39,39,40,40,40,42,47,52,58,63,68,75,81,87,94,101,106,111,116,121,125,129,131,131,130,130,133,136,138,141,145,111,61,67,112,123,122,126,129,148,158,159,144,134,129,121,116,113,110,106,100,92,87,81,73,66,62,57,54,52,51,50,52,53,56,66,72,80,88,94,103,109,114,118,120,118,119,120,124,127,130,135,143,149,156,161,164,165,163,157,151,145,138,134,132,128,122,116,111,107,103,100,95,88,83,76,70,64,58,54,48,45,42,40,39,39,40,41,43,46,50,55,63,70,76,82,88,94,101,107,113,120,124,128,131,131,130,129,131,135,138,140,147,111,71,58,122,121,122,126,150,156,157,159,142,137,132,127,123,118,114,111,109,105,100,93,86,81,75,69,63,59,55,53,52,53,54,58,64,72,79,85,91,98,105,111,115,115,116,119,123,125,128,132,138,144,158,162,164,163,158,152,146,140,134,129,124,118,111,107,103,100,98,93,88,82,77,71,65,59,55,51,47,43,42,42,42,43,46,49,54,59,65,73,79,86,92,98,104,110,114,119,123,126,127,126,128,132,135,137,141,147,153,158,161,107,70,125,125,127,136,124,117,117,108,105,101,96,91,85,80,75,68,63,59,57,58,60,65,71,77,83,90,97,102,105,107,110,116,121,124,128,133,140,147,151,154,149,142,137,129,123,116,111,108,97,95,91,86,81,76,71,64,59,55,50,47,46,46,46,48,52,55,60,67,74,80,86,94,100,105,111,115,117,119,124,129,133,136,141,148,154,158,162,164,162,158,153,148,143,137,132,126,119,113,108,102,98,141,98,66,66,69,75,83,90,96,102,108,111,115,121,128,136,145,149,153,150,147,143,135,128,120,113,109,107,103,100,91,86,81,76,70,66,63,65,54,57,60,66,72,78,85,91,96,102,107,114,119,123,128,134,139,145,152,156,161,164,164,163,159,156,153,148,140,134,127,120,113,108,103,100,98,96,92,84,78,72,66,62,57,54,52,54,76,88,81,90,95,103,112,112,114,121,129,134,141,147,151,150,147,141,136,130,124,117,113,110,109,108,106,103,98,92,85,80,76,70,82,88,95,99,103,112,119,125,132,138,146,153,159,163,163,162,158,154,150,144,132,124,118,111,106,102,99,97,96,93,88,83,78,73,69,65,63,61,63,66,72,78,85,91,97,102,106,111,118,140,87,86,109,121,127,133,139,145,149,150,146,140,131,124,116,112,108,104,105,108,99,103,109,115,123,131,140,146,152,157,161,162,160,157,152,147,141,134,127,120,112,106,102,98,94,92,93,93,97,98,95,99,107,115,124,130,141,149,153,156,159,161,162,160,158,156,151,145,139,132,126,119,113,107,101,97,94,90,86,85,85,87,94,143,149,119,119,112,104,97,95,93,93,94,98,102,108,117,124,131,138,143,148,152,155,155,152,150,145,139,131,121,115,108,102,96,89,85,83,80,80,81,83,87,90,96,102,112,119,127,135,141,147,155,159,163,167,168,167,165,163,161,158,152,145,137,130,117,145,141,147,153,158,159,157,154,152,150,143,136,129,122,113,106,100,94,90,91,91,94,98,105,112,121,129,137,145,155,163,168,171,172,171,167,165,164,159,154,147,139,132,124,117,109,100,93,86,78,77,77,78,79,82,85,91,96,108,116,123,132,139,145,154,142,142,138,130,121,112,106,99,88,90,91,93,97,103,111,120,128,135,139,147,153,156,153,151,150,140,140,133,126,118,110,99,92,85,78,70,71,75,77,80,84,87,93,98,106,114,123,130,139,142,147,157,163,167,169,168,165,163,165,164,158,150,143,143,129,120,113,107,110,117,124,128,129,142,141,132,122,115,107,101,91,94,97,101,108,116,123,132,136,141,147,145,143,155,153,148,138,131,124,117,109,102,94,85,72,76,80,82,84,88,94,102,111,118,126,135,138,143,147,151,158,160,159,156,157,140,135,126,116,107,107,108,113,119,128,131,136,140,153,149,146,139,132,125,118,111,104,96,84,93,94,94,97,102,108,115,119,127,135,139,143,147,152,156,154,51,66,77,125,126,130,135};
-const PROGMEM uint8_t ls[] = {0,0,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,0,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,0,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,0,1,0,1,0,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,0,0,1,1,0,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,0,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,0,1,0,1};
+///**BEGIN INSERTED VALUES/////
+int inst_num = 5;
+const PROGMEM uint8_t xs[] = {0, 200, 200, 0, 0};
+const PROGMEM uint8_t ys[] = {0, 0, 200, 200, 0};
+const PROGMEM uint8_t ls[] = {0, 1, 1, 1, 1};
 ///**END INSERTED VALUES/////
 
 
@@ -24,18 +23,19 @@ int i_num = 0;
 boolean playing = false;
 boolean playing_bounds = false;
 int rate = 50;
-boolean flags[4];
-boolean interrupt = false;
+int velocity = 100;
 
 
 //INPUT
-const int bounding = 1;
-const int next = 0;
-const int play = 2;
-const int prev = 5;
-int buttonState = 0; 
-int highCount[4];
-int threshold[4];
+const int next = 3;
+const int play = 5;
+const int prev = 4;
+const int num_buttons = 3;
+int buttonState = 0;
+int low_count[num_buttons];
+boolean flags[num_buttons];
+boolean interrupt = false;
+
 
 //LASER PARAMS
 int fast_blink = 50;
@@ -43,8 +43,7 @@ int slow_blink = 100;
 int ison = 0;
 const int laser = 12;
 
-//RING PARAMS
-int led = 2;
+
 
 //SERVO PARAMS
 int minPulse = 1400;
@@ -52,260 +51,294 @@ Servo servo_x;
 Servo servo_y;
 
 
-void setup() 
-{ 
+void setup()
+{
 
   // Attach each Servo object to a digital pin
   servo_x.attach(9, 600, 2400);
   servo_y.attach(10, 600, 2400);
 
 
-  for(int i =  0; i < 5; i++){
-    highCount[i] = 0;
+  for (int i =  0; i < num_buttons; i++) {
+    low_count[i] = 0;
   }
 
   pinMode(next, INPUT);
   pinMode(prev, INPUT);
   pinMode(play, INPUT);
-  pinMode(bounding, INPUT);
-
-  for(int i = 0; i < 4; i++){
-    threshold[i] = 800;
-  }
-
   pinMode(laser, OUTPUT);
+
   centerServos();
   Serial.begin(9600);
 }
 
 
 
-void centerServos(){
-  digitalWrite(laser, LOW);  
+void centerServos() {
+  digitalWrite(laser, HIGH);
   servo_x.writeMicroseconds(1500);
   servo_y.writeMicroseconds(1500);
 }
 
-void signalEnd(){
-  for(int i = 0; i < 10; i++){
-    digitalWrite(laser,LOW);  
+void signalEnd() {
+  for (int i = 0; i < 10; i++) {
+    digitalWrite(laser, LOW);
     myDelay(fast_blink);
-    digitalWrite(laser,HIGH);  
+    digitalWrite(laser, HIGH);
     myDelay(slow_blink);
   }
 }
 
-void signalPath(){
-  for(int i = 0; i < 4; i++){
-    digitalWrite(laser,LOW);  
+void signalPath() {
+  for (int i = 0; i < 4; i++) {
+    digitalWrite(laser, LOW);
     myDelay(slow_blink);
-    digitalWrite(laser,HIGH);  
+    digitalWrite(laser, HIGH);
     myDelay(slow_blink);
   }
 }
 
 
-void signalLayer(){
-  for(int i = 0; i < 3; i++){
-    digitalWrite(laser,LOW);  
+void signalLayer() {
+  for (int i = 0; i < 3; i++) {
+    digitalWrite(laser, LOW);
     myDelay(fast_blink);
-    digitalWrite(laser,HIGH);  
+    digitalWrite(laser, HIGH);
     myDelay(fast_blink);
   }
 }
 
-void moveToBound(){
+void moveToBound() {
   int ms_x = 0;
   int ms_y = 0;
   int counter = 0;
   int index;
-  
-  while(!interrupt){
+
+  while (!interrupt) {
     counter++;
     index = counter % 4;
-    
-    if(index == 0){
+
+    if (index == 0) {
       ms_x = minPulse;
       ms_y = minPulse;
-    }else if(index == 1){
-      ms_x = minPulse+200;
+    } else if (index == 1) {
+      ms_x = minPulse + 200;
       ms_y = minPulse;
-    }else if(index == 2){
-       ms_x = minPulse+200;
-       ms_y = minPulse+200;
-    }else{
+    } else if (index == 2) {
+      ms_x = minPulse + 200;
+      ms_y = minPulse + 200;
+    } else {
       ms_x = minPulse;
-      ms_y = minPulse+200;
+      ms_y = minPulse + 200;
     }
-    
+
     digitalWrite(laser, LOW);
     servo_x.writeMicroseconds(ms_x);
     servo_y.writeMicroseconds(ms_y);
     myDelay(1000);
   }
- 
+
 }
 
-int dsquared(int x, int y){
-  return sqrt(x*x  + y*y);
+int distance(int x, int y) {
+  return sqrt(x * x  + y * y);
 }
 
-void myDelay(int time){
+void myDelay(int time) {
   int i = 0;
   boolean hasValue = false;
-  while(i < time){
-    if(!interrupt) checkButtons();
-    delay(1);
-    i++;
+  while (i < time) {
+    if (!interrupt) checkButtons();
+    i += rate;
   }
 }
 
-int moveTo(boolean forward){   
+double msToTheta(int ms) {
+  double theta = 90 + ((ms - 100) / 10.);
+  return (theta * PI / 180.);
+}
+
+int calcTime(int start, int last) {
+  double theta_start = msToTheta(start);
+  double theta_end = msToTheta(start);
+  double s = theta_start;
+  double e = theta_end;
+
+  if (theta_start > theta_end) {
+    s = theta_end;
+    e = theta_start;
+  }
+
+  double radian = PI / 180.;
+
+  //total time is a function of sin
+  double sum = 0;
+  for (double i = s; i < e; i += radian) {
+    sum += sin(i);
+  }
+
+  return int(sum);
+
+}
+
+
+int moveTo(boolean forward, boolean smooth, int velocity) {
   Serial.println(i_num);
-  
+
   unsigned int lval = pgm_read_byte_near(ls + i_num);
   unsigned int xval = pgm_read_byte_near(xs + i_num);
   unsigned int yval = pgm_read_byte_near(ys + i_num);
-  int dist = dsquared(xval - lastms_x, yval - lastms_y);  
-  
-   if(i_num > 0 && last_laser == 0 && lval == 1){
-     signalPath();
-     digitalWrite(laser, LOW);
-     //hold at this step 
-     if(forward) i_num--;
-     else i_num++;
-     last_laser = lval;
-     return dist;
-     
-   }
+  int dist = distance(xval - lastms_x, yval - lastms_y);
 
-     
-  if(lval == 1) digitalWrite(laser, LOW);  
+  if (i_num > 0 && last_laser == 0 && lval == 1) {
+    signalPath();
+    digitalWrite(laser, LOW);
+    //hold at this step
+    if (forward) i_num--;
+    else i_num++;
+    last_laser = lval;
+    return dist;
+  }
+
+
+  if (lval == 1) digitalWrite(laser, LOW);
   else digitalWrite(laser, HIGH);
-  
-  servo_x.writeMicroseconds(xval+minPulse);
-  servo_y.writeMicroseconds(yval+minPulse);
-  
-  myDelay(dist*10);
 
- 
-  
+
+  if (!smooth || lval == 0) {
+    servo_x.writeMicroseconds(xval + minPulse);
+    servo_y.writeMicroseconds(yval + minPulse);
+  } else {
+    //get time relative to wall speed
+    int dx = abs(lastms_x - xval);
+    int dy = abs(lastms_y - yval);
+    int x_step = 1;
+    int y_step = 1;
+
+    if (lastms_x > xval) x_step = -1;
+    if (lastms_y > xval) y_step = -1;
+
+    int max_d = (xval > yval) ? xval : yval;
+    
+    for(int i = 0; i < max_d; i++){
+      if(i < dx) servo_x.writeMicroseconds(minPulse + lastms_x + i*x_step);
+      if(i < dy) servo_y.writeMicroseconds(minPulse + lastms_y + i*y_step);
+      delay(velocity);
+    }
+
+    servo_x.writeMicroseconds(xval + minPulse);
+    servo_y.writeMicroseconds(yval + minPulse);
+  }
+
   lastms_x = xval;
   lastms_y = yval;
   last_laser = lval;
   return dist;
- 
+
 }
 
 
-void advanceIndex(){
-    if(i_num < inst_num -1){
-      ++i_num;
-    }else{
-      signalEnd();
-    }
+void advanceIndex() {
+  if (i_num < inst_num - 1) {
+    ++i_num;
+  } else {
+    signalEnd();
+  }
 }
 
-void retractIndex(){
-    if(i_num > 0){
-       --i_num;
-    }else{
-      signalEnd();
-    }
+void retractIndex() {
+  if (i_num > 0) {
+    --i_num;
+  } else {
+    signalEnd();
+  }
 }
 
-void checkButtons(){
-  int states[4];
-  int trigger_press = 60;
+void checkButtons() {
+
+
+  delay(rate);
+  int states[num_buttons];
   int reset = 200;
   int setValue = false;
-  int threshold = 660;
   states[0] = analogRead(next);
   states[1] = analogRead(prev);
   states[2] = analogRead(play);
-  states[3] = analogRead(bounding);
-  
-  //get the highest of the four
-  int highest_ndx = 0;
-  int highest_value = states[0];
-  for(int i = 1; i < 4; i++){
-    if(states[i] > highest_value){
-      highest_ndx = i;
-      highest_value = states[i];
-    } 
-  }
-  
-  for(int i = 0; i < 4; i++){
-    if(i == highest_ndx && states[i] > threshold){
-      highCount[i]++;
-      if(highCount[i] == trigger_press){
-        
+
+  for (int i = 0; i < num_buttons; i++) {
+    //see if any are zero and return if
+    if (states[i] == 0) {
+
+      if (low_count[i] == 0) {
         flags[i] = true;
         interrupt = true;
-      }else if(highCount[i] == reset){
-        highCount[i] = 0;
+      } else if (low_count[i] == reset) {
+        low_count[i] = 0;
       }
-    }else{
-      highCount[i] = 0;
+      low_count[i]++;
+
+
+    } else {
+      low_count[i] = 0;
     }
-  } 
+  }
 }
 
-void checkSerial(){
-   while (Serial.available() > 0) {
-     int instruction = Serial.parseInt();
-     if(instruction >= 0 && instruction < inst_num){
-       i_num = instruction;
-       Serial.println("Instruction Set to");
-       Serial.println(i_num);
-     }else if(instruction == -1){
-       centerServos();
-     }else if(instruction == -2){
-       //bounding = true;
-       //interrupt = true;
-     }
-   }
+void checkSerial() {
+  while (Serial.available() > 0) {
+    int instruction = Serial.parseInt();
+    if (instruction >= 0 && instruction < inst_num) {
+      i_num = instruction;
+      Serial.println("Instruction Set to");
+      Serial.println(i_num);
+    } else if (instruction == -1) {
+      centerServos();
+    } else if (instruction == -2) {
+      playing_bounds = true;
+      interrupt = true;
+    }
+  }
 }
 
-void loop(){
+void loop() {
   int dist = 0;
   checkSerial();
-  
-  if(!interrupt){
+
+  if (!interrupt) {
     checkButtons();
 
   }
-  
-  if(interrupt){
 
-   
-    if(flags[0]){
+  if (interrupt) {
+
+
+    if (flags[0]) {
       flags[0] = false;
       Serial.println("n");
       playing = false;
       playing_bounds = false;
       advanceIndex();
-      dist = moveTo(true);
+      dist = moveTo(true, false, velocity);
 
 
 
-    }else if(flags[1]){
+    } else if (flags[1]) {
       flags[1] = false;
 
       Serial.println("v");
       playing = false;
       playing_bounds = false;
       retractIndex();
-      dist = moveTo(false);
+      dist = moveTo(false, false, velocity);
 
-    }else if(flags[2]){
+    } else if (flags[2]) {
       flags[2] = false;
 
       Serial.println("p");
       playing = !playing;
       playing_bounds = false;
-    }else if(flags[3]){
-     flags[3] = false;
+    } else if (flags[3]) {
+      flags[3] = false;
 
       Serial.println("b");
       playing = false;
@@ -313,19 +346,18 @@ void loop(){
     }
 
 
-   interrupt = false;
+    interrupt = false;
   }
-  
-  if(playing){
-      advanceIndex();
-      dist = moveTo(true);
-      myDelay(dist*100);
-   }
-   
-   if(playing_bounds){
-     moveToBound();
-   } 
-  
+
+  if (playing) {
+    advanceIndex();
+    dist = moveTo(true, true, velocity);
+  }
+
+  if (playing_bounds) {
+    moveToBound();
+  }
+
 }
 
 

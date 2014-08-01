@@ -161,6 +161,7 @@ Scene2D.prototype.add =function(instructions){
 
 		for(var i in instructions){
 			this.num_per_layer.push(count);
+      console.log("layer "+i+" has "+count);
 			count += instructions[i].length + 1;
 		}
 		this.num_instructions = count;
@@ -380,7 +381,7 @@ Scene2D.prototype.drawStep=function(cause){
     $("#gcode_inst").text(inst.text);
     $("#instruction").text(inst.desc);
 		$("#progress").text("layer: "+(this.layer+1)+" of "+this.instructions.count()
-			      +" // instruction "+(this.num_per_layer[this.layer]+ this.step + 1)+" of "+(this.num_instructions));
+			      +" // instruction "+(this.num_per_layer[this.layer]+ this.step + 1)+" "+ this.layer+" of "+(this.num_instructions));
 
 		//this.text.center(this.w/2, this.h - 3*this.margin/2);
 	}else{

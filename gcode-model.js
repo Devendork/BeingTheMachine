@@ -461,6 +461,8 @@ function cleanInstructions(to_clean){
       inst = to_clean[l][i];
       
       if(inst.type == "G1"){
+        layer.push(inst);
+        /*
         if(last != undefined){
           //the head is at last and going to inst
           if(!last.ext && inst.ext){
@@ -494,10 +496,12 @@ function cleanInstructions(to_clean){
         
         path.push(inst);
         last = inst;
-      }
-    }
-    layer.push(inst);
+        */
+        }
 
+      }
+    
+    //layer.push(inst);
 
     instructions.push(layer);
   }
