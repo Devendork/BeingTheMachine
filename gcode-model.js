@@ -452,16 +452,31 @@ function cleanInstructions(to_clean){
   instructions = [];
   var mat2 = build_env.material_size*build_env.material_size/4;
 
+  var last = undefined;
   for(var l in to_clean){
     var layer = [];
     var path = [];
     var inst = undefined;
-    var last = undefined;
     for(var i in to_clean[l]){
       inst = to_clean[l][i];
       
       if(inst.type == "G1"){
-        layer.push(inst);
+        if(last != undefined){
+           if(inst.obj.adj.x == last.obj.adj.x && inst.obj.adj.x == last.obj.adj.y  && inst.ext == last.ext){
+          
+           }else if(!inst.ext && !last.ext){
+          
+          }else{
+            layer.push(inst);
+          }
+        }else{
+          layer.push(inst);
+        }
+        
+
+        //delete if this and last are same point
+        
+        
         /*
         if(last != undefined){
           //the head is at last and going to inst
@@ -493,10 +508,8 @@ function cleanInstructions(to_clean){
             path.push(inst);
           }
         }
-        
-        path.push(inst);
-        last = inst;
         */
+        last = inst;
         }
 
       }
@@ -629,10 +642,12 @@ function fromMicroseconds(layer_id,x, y){
 }
 
 
-//to do figure out why microseconds isn't writing the full range
 function toMicroseconds(layer_id,x, y){ 
+  
   //make sure to account for material height here. 
+  
   var adj_height = build_env.height - (layer_id)*build_env.material_size;
+  
 
   if(layer_id == 0 && x == 0 && y == 0){ //assume this is a starting block
     x = ebbox.min.x;
@@ -643,6 +658,8 @@ function toMicroseconds(layer_id,x, y){
   var theta = {
     x: rad_to_deg(Math.atan((x - build_env.ctr.x)/adj_height)) +  90,
     y: rad_to_deg(Math.atan((y - build_env.ctr.y)/adj_height)) +  90.
+    //hx: rad_to_deg(Math.atan((x - build_env.ctr.x)/build_env.height)) +  90,
+    //hy: rad_to_deg(Math.atan((y - build_env.ctr.y)/build_env.height)) +  90.
   };  
 
     if(theta.x > 110 || theta.x < 80){
@@ -657,6 +674,8 @@ function toMicroseconds(layer_id,x, y){
   var ms = {
     x: parseInt(theta.x*ms_per_theta - min_ms),
     y: parseInt(theta.y*ms_per_theta - min_ms)
+   // hx: parseInt(theta.hx*ms_per_theta - min_ms),
+   // hy: parseInt(theta.hy*ms_per_theta - min_ms)
   };
   
   if(ms.x > 200 || ms.x < 0){
@@ -666,6 +685,7 @@ function toMicroseconds(layer_id,x, y){
 
   return ms;  
 }
+
 
 function createArduinoInstructions(){
   var last = {x:ebbox.min.x, y:ebbox.min.y,z:ebbox.min.z,  ext:false};
@@ -677,13 +697,25 @@ function createArduinoInstructions(){
     msy:[],
     layer_ids:[]};
 
+
+  ilist.bx = [ebbox.min.x, ebbox.max.x, ebbox.max.x, ebbox.min.x];
+  ilist.by = [ebbox.min.y, ebbox.min.y, ebbox.max.y, ebbox.max.y];
+
+  for(var i in ilist.bx){
+    var ms  = toMicroseconds(0, ilist.bx[i], ilist.by[i]);
+    ilist.bx[i] = ms.x;
+    ilist.by[i] = ms.y;
+  }
+
+  var i_count = 0;
+
   //go through and make the instructions
   for(var l in instructions){
     for(var i in instructions[l]){
       var inst = instructions[l][i];
 
       if(inst.type == "G1"){
-        ilist.layer_ids.push(l);
+        i_count++;
         ilist.xs.push(inst.coord.x);
         ilist.ys.push(inst.coord.y);
         ilist.msx.push(inst.obj.microseconds.x);
@@ -700,10 +732,12 @@ function createArduinoInstructions(){
         last.ext = inst.ext;
       } 
     }
+    ilist.layer_ids.push(i_count+1); //add 1 since we want the id of the first instruction on the next layer
   }
+  ilist.layer_ids.push(0); //use this to make sure we don't overshoot the array bounds in arduino
+
    return ilist;
 }
-
 
 function getArduinoFile(){
   var lines = [];
@@ -722,6 +756,9 @@ function getArduinoFile(){
   lines.push("const PROGMEM uint8_t xs[] = {"+ilist.msx.join(",")+"};")
   lines.push("const PROGMEM uint8_t ys[] = {"+ilist.msy.join(",")+"};")
   lines.push("const PROGMEM uint8_t ls[] = {"+ilist.ls.join(",")+"};")
+  lines.push("const PROGMEM uint8_t bx[] = {"+ilist.bx.join(",")+"};")
+  lines.push("const PROGMEM uint8_t by[] = {"+ilist.by.join(",")+"};")
+  lines.push("const PROGMEM uint16_t layers[] = {"+ilist.layer_ids.join(",")+"};")
   return lines;  
 }
 

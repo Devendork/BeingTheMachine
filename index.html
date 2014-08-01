@@ -51,39 +51,7 @@
 
 
     </style>
-    <!-- 3rd party libs -->
-    <script src="lib/modernizr.custom.93389.js"></script>
-    <script src="lib/jquery-1.7.1.min.js"></script>
-    <script src="lib/bootstrap-modal.js"></script>
-    <script src="lib/sugar-1.2.4.min.js"></script>
-    <!--<script src="lib/Three.js"></script>-->
-    <script src="lib/three.min.js"></script>
-    <script src="lib/TrackballControls.js"></script>
-    <script src="lib/svg.min.js"></script>
-    <!-- Custom code -->
-    <script src="gcode-parser.js"></script>
-    <script src="gcode-model.js"></script>
-    <script src="renderer.js"></script>
-    <script src="ui.js"></script>
-    <!-- Fonts -->
-    <script src="fonts/helvetiker_regular.typeface.js"></script>
-    <script>
-	    document.onkeydown = checkKey;
-      /*  
-      $(document).ready(function(){
-        console.log("ready");
-        var h = $("#renderArea3D").height();
-        var w = $("#renderArea3D").width();
-        var dh = $("#model_info").height();
-        var dw = $("#model.info").width();
-          $("#model_info").offset({
-            top:h - dh - 500,
-            left: 0.5 * (w - dw)
-          });
-        });
-    */
-    </script>
-    
+       
     <!-- Google Analytics tracking code for artfordorks.com --> 
 <script>
 	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
@@ -108,6 +76,7 @@
           <ul class="nav">
             <li><a href="javascript:openDialog()">Load Model</a></li>
             <li><a href="javascript:about()">About</a></li>
+            <li><a href="javascript:options()">Options</a></li>
             <li><a href="javascript:arduino()">Download Code for Arduino</a></li>
 	</ul>
 	<ul class="nav pull-right">
@@ -181,5 +150,51 @@
       </div>
     </div>
 
-     </body>
+    <div class="modal fade" id="optionsModal" style="display: none">
+      <div class="modal-header">
+        <a class="close" data-dismiss="modal">&times;</a>
+        <h3>Options</h3>
+      </div>
+      <div class="modal-body">
+        <form id="opt" name="opt">
+        <p>
+        Account for  Height when Calculating Points for Arduino?:<br>
+        <input id="dimension_2d" name= "dimension" type="radio" value="2d"/> No (i.e. 2D drawings, making layers and assembling afterwards) <br> 
+        <input id="dimension_3d" name= "dimension" type="radio" value="3d"/> Yes (i.e. assembling 3D object with layer atop layer)
+        </p>
+         
+        <p>
+        How would you like the paths rendered:<br>
+        <input id="render_raw" name= "render" type="radio" value="raw"/> Exactly From G-Code<br>
+        <input id="render_adjusted" name= "render" type="radio" value="adjusted"/> Adjusted to reflect how it will actually draw with Arduino
+        </p>
+        </form>
+        </div>
+
+      <div class="modal-footer">
+        <a class="btn btn-primary" data-dismiss="modal">OK</a>
+      </div>
+    </div>
+
+  <!-- 3rd party libs -->
+    <script src="lib/modernizr.custom.93389.js"></script>
+    <script src="lib/jquery-1.7.1.min.js"></script>
+    <script src="lib/bootstrap-modal.js"></script>
+    <script src="lib/sugar-1.2.4.min.js"></script>
+    <!--<script src="lib/Three.js"></script>-->
+    <script src="lib/three.min.js"></script>
+    <script src="lib/TrackballControls.js"></script>
+    <script src="lib/svg.min.js"></script>
+    <!-- Custom code -->
+    <script src="gcode-parser.js"></script>
+    <script src="gcode-model.js"></script>
+    <script src="renderer.js"></script>
+    <script src="ui.js"></script>
+    <!-- Fonts -->
+    <script src="fonts/helvetiker_regular.typeface.js"></script>
+    
+    <script>
+      document.onkeydown = checkKey;
+    </script>
+    </body>
 </html>

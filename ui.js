@@ -1,3 +1,22 @@
+var use_height = true;
+var render_raw = true;
+
+
+$('#dimension_3d').attr('checked', 'checked');
+$('#render_raw').attr('checked', 'checked');
+
+$('#opt ').click(function() {
+     var dim = $('input[name=dimension]:checked').val(); 
+     var ren = $('input[name=render]:checked').val(); 
+
+     if(dim == "2d") use_height = false;
+     else use_height = true;
+
+     if(dim == "raw") render_raw = true;
+     else render_raw= false;
+});
+
+
 
 
 function error(msg) {
@@ -46,6 +65,11 @@ function arduino(){
 
 function about() {
   $('#aboutModal').modal();
+}
+
+
+function options() {
+  $('#optionsModal').modal();
 }
 
 function openDialog() {
