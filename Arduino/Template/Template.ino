@@ -2,20 +2,13 @@
 //Laura Devendorf
 //Being the Mahcine
 //Arduino Uno Code for Guided 3D Printing
-//Generated: 8/1/14 - 10:24am
+//Generated: 8/2/14
 ////////////////
 
 #include <Servo.h>
 #include <avr/pgmspace.h>
 
 ///**BEGIN INSERTED VALUES/////
-int inst_num = 6;
-const PROGMEM uint8_t xs[] = {0, 200, 0, 200, 0, 200};
-const PROGMEM uint8_t ys[] = {0, 200, 0, 200, 0, 200};
-const PROGMEM uint8_t ls[] = {0, 1, 1, 1, 1, 1};
-const PROGMEM uint8_t bx[] = {6, 193, 193, 6, 6};
-const PROGMEM uint8_t by[] = {46, 153, 153, 46, 46};
-const PROGMEM uint16_t layers[] = {72, 110, 266, 625, 963, 1242, 1560, 1918, 2047, 2106, 0};
 ///**END INSERTED VALUES/////
 
 
@@ -32,9 +25,9 @@ int cur_layer = 0;
 
 
 //INPUT
-const int next = 3;
-const int play = 5;
-const int prev = 4;
+const int next = 2;
+const int play = 0;
+const int prev = 1;
 const int num_buttons = 3;
 int buttonState = 0;
 int low_count[num_buttons];
@@ -42,7 +35,7 @@ boolean flags[num_buttons];
 boolean interrupt = false;
 
 //OUTPUT
-const int speaker = 7;
+const int speaker = 13;
 int tones[] = {261, 277, 294, 311, 330, 349, 370, 392, 415, 440};
 
 
@@ -50,7 +43,7 @@ int tones[] = {261, 277, 294, 311, 330, 349, 370, 392, 415, 440};
 int fast_blink = 50;
 int slow_blink = 100;
 int ison = 0;
-const int laser = 12;
+const int laser = 8;
 
 
 
@@ -283,7 +276,8 @@ void checkButtons() {
   states[2] = analogRead(play);
   int lowest = 0;
   int low_val = states[0];
-
+  
+  Serial.println(states[0]);
   //get the lowest value of the buttons
   for (int i = 1; i < num_buttons; i++) {
     if (states[i] < low_val) {
