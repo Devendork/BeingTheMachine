@@ -5,7 +5,8 @@ function Scene2D(element){
 	this.layer = 0;
 	this.step = 0;
 	this.scale = 1; 
-	this.w = element.width();
+	this.ebbox = undefined;
+  this.w = element.width();
 	this.h = element.height();
 	this.instructions = [];
 	this.draw = SVG('renderArea2d');
@@ -27,7 +28,7 @@ function Scene2D(element){
 
 }
 
-
+Scene2D.prototype.ebbox = 0;
 Scene2D.prototype.num_per_layer= [];
 Scene2D.prototype.num_instructions = 0;
 Scene2D.prototype.group = null;
@@ -47,6 +48,8 @@ Scene2D.prototype.draw = null;
 Scene2D.prototype.circle= null;
 Scene2D.prototype.line = null;
 Scene2D.prototype.path = [];
+
+
 
 Scene2D.prototype.clearLayerPaths = function(){
 	for(var i in this.polylines){
@@ -152,24 +155,24 @@ Scene2D.prototype.createPolyline = function(ghost){
 
 
 
-Scene2D.prototype.add =function(instructions){
-		this.step = 0;
+Scene2D.prototype.add =function(flavor){
+		this.ebbox = flavor.bbox;
+    this.step = 0;
 		this.layer = 0;
-		this.instructions = instructions;	
+		this.instructions = flavor.is;
 
 		var count = 0;
 
 		for(var i in instructions){
 			this.num_per_layer.push(count);
-      console.log("layer "+i+" has "+count);
 			count += instructions[i].length + 1;
 		}
 		this.num_instructions = count;
 
 
 		//scale by bounding box
-		var sx = ebbox.max.x - ebbox.min.x;
-		var sy = ebbox.max.y - ebbox.min.y;
+		var sx = this.ebbox.max.x - this.ebbox.min.x;
+		var sy = this.ebbox.max.y - this.ebbox.min.y;
 
     if(this.w > this.h){
       window_factor = this.h-100;
@@ -181,8 +184,8 @@ Scene2D.prototype.add =function(instructions){
 
 
 	  this.scale = (window_factor-this.margin*2) / box_factor; 		
-    this.offset = {x: this.scale*-ebbox.min.x+(this.w - this.scale*sx)/2, 
-                  y:this.scale*-ebbox.min.y+(this.h - this.scale*sy)/2};
+    this.offset = {x: this.scale*-this.ebbox.min.x+(this.w - this.scale*sx)/2, 
+                  y:this.scale*-this.ebbox.min.y+(this.h - this.scale*sy)/2};
 
 
 		if(this.line != null) this.line.remove();
@@ -213,6 +216,7 @@ Scene2D.prototype.resize =function(){
 	this.w = this.element.width();
 	this.h = this.element.height()-100;
 
+  var ebbox = this.ebbox;
 	//scale by bounding box
 	var sx = ebbox.max.x - ebbox.min.x;
 	var sy = ebbox.max.y - ebbox.min.y;
@@ -247,8 +251,8 @@ Scene2D.prototype.updatePlane = function(){
 
 	var zpos = (instruction == null)? 0 : instruction.to.z;
 	var center = new THREE.Vector3(
-		ebbox.min.x + ((ebbox.max.x - ebbox.min.x) / 2),
-		ebbox.min.y + ((ebbox.max.y - ebbox.min.y) / 2),
+		this.ebbox.min.x + ((this.ebbox.max.x - this.ebbox.min.x) / 2),
+		this.ebbox.min.y + ((this.ebbox.max.y - this.ebbox.min.y) / 2),
 		zpos);
 	plane.position = center;
 

@@ -29,8 +29,8 @@
       }
 
         #renderArea2d{
-    position:fixed;
-    top:40px;
+          position:fixed;
+          top:40px;
     left:0px;
     right:0px;
     bottom:0px;
@@ -39,7 +39,7 @@
         }
 
         #renderArea3d{
-    position:fixed;
+          position:fixed;
     top:40px;
     left:50%;
     right:0px;
@@ -54,14 +54,15 @@
        
     <!-- Google Analytics tracking code for artfordorks.com --> 
 <script>
-	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  /*
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
 	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
 	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
 	})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
 	
 	ga('create', 'UA-1764729-2', 'artfordorks.com');
 	ga('send', 'pageview');
-
+*/
 	</script>
 
 
@@ -84,23 +85,6 @@
 		            <li><a href="http://artfordorks.com" target="_blank">artfordorks.com</a></li>
 	</ul>
         </div>
-      </div>
-    </div>
-
-
-    <!-- WebGL rendering area -->
-    <div id="renderArea2d">
-      <div id = "layer_info">
-        <div id ="gcode_inst"> </div>
-        <div id ="instruction"></div>
-        <div id ="progress"></div>
-      </div>
-    </div> 
-    <div id="renderArea3d">
-      <div id = "model_info">
-        <div id ="model_filename">Filename: </div>
-        <div id ="model_material_size">Material Size: </div>
-        <div id ="model_laser_distance">Position to Laser: </div>
       </div>
     </div>
 
@@ -150,7 +134,7 @@
       </div>
     </div>
 
-    <div class="modal fade" id="optionsModal" style="display: none">
+   <div class="modal fade" id="optionsModal" style="display: none">
       <div class="modal-header">
         <a class="close" data-dismiss="modal">&times;</a>
         <h3>Options</h3>
@@ -159,7 +143,7 @@
         <form id="opt" name="opt">
         <p>
         Account for  Height when Calculating Points for Arduino?:<br>
-        <input id="dimension_2d" name= "dimension" type="radio" value="2d"/> No (i.e. 2D drawings, making layers and assembling afterwards) <br> 
+        <input id="dimension_2d" name= "dimension" type="radio" value="2d" /> No (i.e. 2D drawings, making layers and assembling afterwards) <br> 
         <input id="dimension_3d" name= "dimension" type="radio" value="3d"/> Yes (i.e. assembling 3D object with layer atop layer)
         </p>
          
@@ -168,11 +152,35 @@
         <input id="render_raw" name= "render" type="radio" value="raw"/> Exactly From G-Code<br>
         <input id="render_adjusted" name= "render" type="radio" value="adjusted"/> Adjusted to reflect how it will actually draw with Arduino
         </p>
-        </form>
-        </div>
+
+        <p>Force Material Height:<br>
+        <input id="force_height" name="force_height" type="number"   size = "4" min = "0" autofucus /> mm<br>
+        <small>this original g-code layer height for this file is <span id="default_height">0</span> mm</small></p>
+        
+      
+      </form>
+       </div>
 
       <div class="modal-footer">
         <a class="btn btn-primary" data-dismiss="modal">OK</a>
+      </div>
+    </div>
+
+
+
+    <!-- WebGL rendering area -->
+    <div id="renderArea2d">
+      <div id = "layer_info">
+        <div id ="gcode_inst"> </div>
+        <div id ="instruction"></div>
+        <div id ="progress"></div>
+      </div>
+    </div> 
+    <div id="renderArea3d">
+      <div id = "model_info">
+        <div id ="model_filename">Filename: </div>
+        <div id ="model_material_size">Material Size: </div>
+        <div id ="model_laser_distance">Position to Laser: </div>
       </div>
     </div>
 
@@ -182,12 +190,13 @@
     <script src="lib/bootstrap-modal.js"></script>
     <script src="lib/sugar-1.2.4.min.js"></script>
     <!--<script src="lib/Three.js"></script>-->
-    <script src="lib/three.min.js"></script>
-    <script src="lib/TrackballControls.js"></script>
+   <script src="lib/three.min.js"></script>
+   <script src="lib/TrackballControls.js"></script>
     <script src="lib/svg.min.js"></script>
     <!-- Custom code -->
     <script src="gcode-parser.js"></script>
     <script src="gcode-model.js"></script>
+    <script src="flavor.js"></script>
     <script src="renderer.js"></script>
     <script src="ui.js"></script>
     <!-- Fonts -->

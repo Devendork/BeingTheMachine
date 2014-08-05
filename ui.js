@@ -1,22 +1,85 @@
-var use_height = true;
 var render_raw = true;
+
+var scene2d = null;
+var scene3d = null;
 
 
 $('#dimension_3d').attr('checked', 'checked');
 $('#render_raw').attr('checked', 'checked');
 
-$('#opt ').click(function() {
-     var dim = $('input[name=dimension]:checked').val(); 
-     var ren = $('input[name=render]:checked').val(); 
 
-     if(dim == "2d") use_height = false;
-     else use_height = true;
+$('#force_height').change(function(evt){
+  var h = $('#force_height').val();
+  console.log("force height to "+h);
+  updateModel(h);
+});
 
-     if(dim == "raw") render_raw = true;
-     else render_raw= false;
+$('#dimension_2d').click(function (evt){
+  console.log("2d clicked");
+  $('#force_height').val(0);
+  updateModel(0);
 });
 
 
+$('#dimension_3d').click(function (evt){
+  console.log("3d clicked");
+  var h = $('#force_height').val();
+  if(h == 0) h = raw_flavor.height;
+  $('#force_height').val(h);
+  updateModel(h);
+});
+
+$('#render_raw').click(function(evt){
+  console.log("render_raw");
+  render_raw = true;
+  updateModel(select_flavor.height);
+});
+
+
+$('#render_adjusted').click(function(evt){
+  console.log("render_adjusted");
+  render_raw = false;
+  updateModel(select_flavor.height);
+});
+
+function updateModel(h){
+
+  if(hasGL) scene3d.remove(select_flavor.object); 
+  select_flavor = new outputFlavor(raw_flavor.is, raw_flavor.diameter, h, render_raw);   
+  
+  scene2d.add(select_flavor);
+  if(hasGL) scene3d.add(select_flavor.object);
+
+
+}
+
+/*
+$('#opt ').click(function(evt) {
+   var dim = $('input[name=dimension]:checked').val(); 
+   var ren = $('input[name=render]:checked').val(); 
+   var h = 0;
+   var fh = $('#force_height').val();
+   console.log("Forcing Height of "+ fh);
+
+
+   if(dim == "2d"){
+     h = 0;
+     use_height = false;
+     $('#force_height').prop('disabled', true);
+   } else{
+     if(fh != raw_flavor.height) h = fh;
+     else h = raw_flavor.height;
+     use_height = true;
+     $('#force_height').prop('disabled', false);
+   }
+
+  $('#force_height').val(h);
+  
+  if(dim == "raw") render_raw = true;
+  else render_raw= false;
+
+});
+*/
 
 
 function error(msg) {
@@ -35,6 +98,8 @@ function arduino(){
 	var data = getArduinoFile();
   var file_lines = [];
   file_lines.push("//// Values generated for "+$("#model_filename").text());
+  file_lines.push("//// Material Diameter "+select_flavor.diameter); 
+  file_lines.push("//// Material Height"+select_flavor.height); 
   var file = loadFile("Arduino/Template/Template.ino", function(arduino){
   var lines = arduino.split('\n');
    console.log("num lines "+lines.length);
@@ -66,127 +131,17 @@ function arduino(){
 function about() {
   $('#aboutModal').modal();
 }
+$("#optionsModal").on('shown', function() {
+  $(this).find("[autofocus]:first").focus();
+});
 
-
-function options() {
-  $('#optionsModal').modal();
+function options(evt) {
+  $('#optionsModal').modal()
 }
 
 function openDialog() {
   $('#openModal').modal();
 }
-
-var scene2d = null;
-var scene3d = null;
-var object = null;
-var plane = null;
-
-function createPlane(){
-  var z;
-	if(instructions != null){
-		var inst = null;
-		var i = 0;
-		while(inst == null && i < instructions[0].count()){
-			inst = instructions[0][i].obj;
-		}
-		
-		z = (inst == null) ? 0 : inst.to.z;
-	}else z = 0;
-
-
-  var material = new THREE.MeshBasicMaterial( {color: "#005B66", side: THREE.DoubleSide} );
-	var geometry = new THREE.PlaneGeometry(ebbox.max.x - ebbox.min.x, ebbox.max.y - ebbox.min.y);
-
-	plane = new THREE.Mesh( geometry, material );
-	
-	var center = new THREE.Vector3(
-  		ebbox.min.x + ((ebbox.max.x - ebbox.min.x) / 2),
-  		ebbox.min.y + ((ebbox.max.y - ebbox.min.y) / 2), 
-		  ebbox.min.z);
-  
-	plane.position = center;
-	object.add(plane);	
-
-  var color_rand = 0.7549;
-  var textMaterial = new THREE.MeshBasicMaterial( { color: "#CB1300", overdraw: 0.5 } );
-  var lineMaterial = new THREE.LineBasicMaterial( { color: "#CB1300"} );
-  var text_objects = [];
-  var line_objects = [];
-  var i;
-  var dimension;
-  for(i = 0; i< 3; i++){
-    line_objects[i] = new THREE.Geometry();
-    
-    if(i == 0){
-      axis = "x";
-      dimension = ebbox.max.x - ebbox.min.x;
-      line_objects[i].vertices.push(
-        new THREE.Vector3(ebbox.min.x, ebbox.min.y -5 , ebbox.min.z),
-        new THREE.Vector3(ebbox.max.x, ebbox.min.y -5 , ebbox.min.z)
-      );
-    }
-
-    if(i == 1){
-      axis = "y";
-      dimension = ebbox.max.y - ebbox.min.y;
-      line_objects[i].vertices.push(
-        new THREE.Vector3(ebbox.min.x-5, ebbox.min.y, ebbox.min.z),
-        new THREE.Vector3(ebbox.min.x-5, ebbox.max.y, ebbox.min.z)
-      );
-    }
-
-    if(i == 2){
-      axis = "z";
-      dimension = ebbox.max.z - ebbox.min.z;
-      line_objects[i].vertices.push(
-        new THREE.Vector3(ebbox.min.x-5, ebbox.min.y -5 , ebbox.min.z),
-        new THREE.Vector3(ebbox.min.x-5, ebbox.min.y -5 , ebbox.max.z)
-      );
-
-    }
-
-    dimension = Math.round(dimension * 10) / 10; 
-    text_objects[i] = new THREE.TextGeometry(dimension+" mm", {
-    size:4,
-    height: 1,
-    curveSegments: 2, 
-    font: "helvetiker"  
-    });
-   
-    text_objects[i].computeBoundingBox();
-
-    var centerOffset = -0.5 * ( text_objects[i].boundingBox.max.x - text_objects[i].boundingBox.min.x );
-    var text = new THREE.Mesh( text_objects[i], textMaterial );
-    var line = new THREE.Line(line_objects[i], lineMaterial);
-
-    if(i == 0){
-      text.position.x =  ebbox.min.x + 0.5*dimension + centerOffset;
-      text.position.y =  ebbox.min.y - 10;
-      text.position.z = z;
-    }
-
-    if(i == 1){
-      text.position.x = ebbox.min.x - 10;
-      text.position.y = ebbox.min.y + (dimension * 0.5) + centerOffset;
-      text.position.z = z;
-      text.rotation.z = Math.PI * 0.5;
-    }
-
-    if(i == 2){
-      text.position.x = ebbox.min.x-5;
-      text.position.y = ebbox.min.y-10; 
-      text.position.z = ebbox.min.z + (dimension * 0.5)- centerOffset;
-      text.rotation.y = Math.PI * 0.5;
-    }
-
-    object.add(text);	
-    object.add(line);	
-
-
-  }
-
-}
-
 
 function checkKey(e){
 
@@ -214,18 +169,16 @@ function checkKey(e){
 
 function openGCodeFromPath(path) {
   $('#openModal').modal('hide');
-  if (hasGL && object) {
-    scene3d.remove(object);
+  if (hasGL && select_flavor.object) {
+    scene3d.remove(select_flavor.object);
   }
 
   loadFile(path, function(gcode) {
     createGeometryFromGCode(gcode);
-    scene2d.add(instructions);
+    scene2d.add(select_flavor);
     
     if(hasGL){
-      object = createObjectFromInstructions();
-      createPlane();
-      scene3d.add(object);
+      scene3d.add(select_flavor.object);
     }
 
     var ard_env = getArduinoData();
@@ -243,19 +196,18 @@ function openGCodeFromPath(path) {
 
 function openGCodeFromText(name, gcode) {
   $('#openModal').modal('hide');
-  if (hasGL && object) {
-    scene3d.remove(object);
+  if (hasGL && select_flavor && select_flavor.object) {
+    scene3d.remove(select_flavor.object);
     }
   
-  createGeometryFromGCode(gcode);
-  scene2d.add(instructions);
+    createGeometryFromGCode(gcode);
+    scene2d.add(select_flavor);
   
   if(hasGL){
-  	object = createObjectFromInstructions();
-  	createPlane();
-	  scene3d.add(object);
+	  scene3d.add(select_flavor.object);
   }	
 
+    var build_env = select_flavor.env;
     var m_size = Math.round(build_env.material_size * 100 ) / 100; 
     var dist = Math.round(build_env.height * 100 ) / 100; 
     $("#model_filename").text("Filename: "+name);
