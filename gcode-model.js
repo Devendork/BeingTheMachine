@@ -391,21 +391,46 @@ function createGeometryFromGCode(gcode) {
     material_size = layer_heights[0];
   }
   
+
+
   if(count > 1) 
       console.log("ERROR: Multiple Layer Heights Detected, Using Most Common For Printing");
   console.log("Material size is "+material_size);
 
+
+  console.log("After Initial input");
+  checkUndefined(instructions);
+
   raw_flavor = new outputFlavor(instructions, material_size, material_size, true);
  console.log("raw flavor test :"+raw_flavor.boundingBox());
+
+  console.log("After Raw ");
+  checkUndefined(raw_flavor.is);
+
 
   $("#force_height").val(material_size);
   $("#default_height").html(material_size);
 
-  select_flavor = new outputFlavor(instructions, material_size, material_size, render_raw);
+  select_flavor = new outputFlavor(instructions.slice(0), material_size, material_size, render_raw);
+   console.log("After SElect");
+  checkUndefined(select_flavor.is);
+
+
   
+
+
 
 }
 
+function checkUndefined(instructions){
+ var udef_count = 0;
+  for(var l in instructions){
+    for(var i in instructions[l]){
+      if(instructions[l][i] == undefined) udef_count++; 
+    }
+  }
+  console.log("There were "+udef_count+" undefined values");
+}
 
 function isValidDistance(p1, p2, d){
   dx = Math.abs(p1.x - p2.x);

@@ -34,22 +34,35 @@ outputFlavor.prototype.updateInstructionHeight = function(is, height){
       inst.coord.z = l * height;
     }
   }
+} 
 
-}  
 
 outputFlavor.prototype.arduinoInstructions = function(){
-  var instructions = this.is;
-  var a_is = instructions.slice(0);
-    for(l in a_is){
-      for(i in a_is[l]){
-        var inst = a_is[l][i];
-        if(inst.type == "G1"){ 
+  var a_is = [];
+
+  for(var l in this.is){
+      a_is.push([]);
+      for(var i in this.is[l]){
+        var inst = this.is[l][i];   
+       
+
+       if(inst.type == "G1"){ 
+         var ai = {
+            text: inst.text,
+            desc: inst.desc, 
+            type: inst.type,
+            coord: {x: inst.coord.x, y:inst.coord.y, z:inst.coord.z},
+            ext: inst.ext,
+            obj: inst.obj
+          };
+        
           inst.obj.microseconds = this.toMicroseconds(l, inst.coord.x, inst.coord.y);
-          inst.obj.coord = this.fromMicroseconds(l, inst.obj.microseconds.x, inst.obj.microseconds.y);
-        }
+          ai.coord = this.fromMicroseconds(l, inst.obj.microseconds.x, inst.obj.microseconds.y);
+          ai.coord.z = l * this.height;
+          a_is[l].push(ai);
+         }
       }
   }
-   
   return this.cleanInstructions(a_is);
 }
 
@@ -78,12 +91,12 @@ outputFlavor.prototype.boundingBox = function(){
 outputFlavor.prototype.setupEnvironment = function(){
   var build_env = [];
   var bbox = this.bbox;
-  build_env.material_size= this.height;
+  build_env.material_size= this.diameter;
   build_env.dim = {x: bbox.max.x - bbox.min.x, y: bbox.max.y - bbox.min.y};
   build_env.ctr = {x: bbox.min.x + build_env.dim.x/2., y: bbox.min.y + build_env.dim.y/2.};
   build_env.max_dim = (build_env.dim.x > build_env.dim.y) ? build_env.dim.x: build_env.dim.y;
   var dist_to_top_layer = (build_env.max_dim/2.) / Math.tan(deg_to_rad(10));
-  build_env.height = dist_to_top_layer + build_env.material_size*(this.is.length+1);
+  build_env.height = dist_to_top_layer + this.height*(this.is.length+1);
   build_env.model_height = build_env.height - dist_to_top_layer;
   return build_env;
 }

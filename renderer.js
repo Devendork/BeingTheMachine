@@ -72,9 +72,11 @@ Scene2D.prototype.addGhostPaths = function(){
 
 	for(var i in this.instructions[this.layer]){
 		inst = this.instructions[this.layer][i];
-		if(inst.type == "G1"){
-			this.addGhostPath(inst, last);
-			last = inst;
+		next = this.getNextGInst(this.layer, i);
+		last = this.getLastGInst(this.layer, i);
+    
+    if(inst.type == "G1"){
+			this.addGhostPath(inst, last, next);
 		}
 	}
 	
@@ -93,18 +95,21 @@ Scene2D.prototype.addGhostPaths = function(){
 Scene2D.prototype.addLayerPaths = function(){
 	var last = null;
 	var inst = null;	
+  var next = null;
 
 	for(var i in this.instructions[this.layer]){
 		inst = this.instructions[this.layer][i];
-		if(inst.type == "G1"){ 
-			this.addPath(inst, last);
-			last = inst;	
+		next = this.getNextGInst(this.layer, i);
+		last = this.getLastGInst(this.layer, i);
+    
+    if(inst.type == "G1"){ 
+			this.addPath(inst, last, next);
 		}	
 	}
 
 }
 
-Scene2D.prototype.addGhostPath= function(inst,last){
+Scene2D.prototype.addGhostPath= function(inst,last, next){
 	if(inst.type == "G1" && inst.ext){
 		if (last == null || !last.ext){
 			var np = [];
@@ -112,12 +117,16 @@ Scene2D.prototype.addGhostPath= function(inst,last){
 			this.ghost_path.push(np);
 			this.ghost_polylines.push(this.createPolyline(true));
 		}
-		this.ghost_path[this.ghost_path.count()-1].push(inst.obj.to.x+","+inst.obj.to.y);
+
+    if(next != null){
+      this.ghost_path[this.ghost_path.count()-1].push(next.coord.x+","+next.coord.y);
+    }
+
 	}
 
 }
 
-Scene2D.prototype.addPath= function(inst,last){
+Scene2D.prototype.addPath= function(inst,last,next){
 	if(inst.type == "G1" && inst.ext){
 		if (last == null || !last.ext){
 			var np = [];
@@ -125,8 +134,11 @@ Scene2D.prototype.addPath= function(inst,last){
 			this.path.push(np);
 			this.polylines.push(this.createPolyline(false));
 		}
-		this.path[this.path.count()-1].push(inst.obj.to.x+","+inst.obj.to.y);
-	}
+
+    if(next != null){
+		  this.path[this.path.count()-1].push(next.coord.x+","+next.coord.y);
+	  }
+  }
 
 }
 
@@ -157,8 +169,8 @@ Scene2D.prototype.createPolyline = function(ghost){
 
 Scene2D.prototype.add =function(flavor){
 		this.ebbox = flavor.bbox;
-    this.step = 0;
-		this.layer = 0;
+    //this.step = instruction;
+		//this.layer = layer;
 		this.instructions = flavor.is;
 
 		var count = 0;
@@ -245,11 +257,11 @@ Scene2D.prototype.updatePlane = function(){
 	var instruction = null;
 	var i = 0;
 	while(instruction == null && i < this.instructions[this.layer].count()){
-		instruction = this.instructions[this.layer][i].obj;
+		instruction = this.instructions[this.layer][i];
 		i++;
 	}
 
-	var zpos = (instruction == null)? 0 : instruction.to.z;
+	var zpos = (instruction == null)? 0 : instruction.coord.z;
 	var center = new THREE.Vector3(
 		this.ebbox.min.x + ((this.ebbox.max.x - this.ebbox.min.x) / 2),
 		this.ebbox.min.y + ((this.ebbox.max.y - this.ebbox.min.y) / 2),
@@ -317,13 +329,39 @@ Scene2D.prototype.prevStep= function(){
 	}
 }
 
-Scene2D.prototype.getLastGInst = function(){
-	var ndx = this.step -1;
-	var inst = null
-	while(ndx > 0 && inst == null){
-		var check = this.instructions[this.layer][ndx];
+
+Scene2D.prototype.getLastGInst = function(cur_layer, step){
+	var ndx = step -1;
+	var inst = null;
+	while(inst == null){
+    if(ndx < 0){
+      if(cur_layer == 0) return null;
+      cur_layer--;
+      ndx = this.instructions[cur_layer].count()-1; //set index to the last instruction at this layer
+    }
+
+		var check = this.instructions[cur_layer][ndx];
 		if(check.type == "G1") inst = check;
 		ndx--;	
+	} 
+	return inst;
+}
+
+Scene2D.prototype.getNextGInst = function(cur_layer, step){
+  var ndx = ++step;
+  var inst = null;
+
+	while(inst == null){
+		//if you hit the end of this layer, go to the next
+    if(ndx >= this.instructions[cur_layer].count()){
+      cur_layer++;
+      ndx = 0;
+      if(cur_layer == this.instructions.count()) return null;
+    }
+
+    var check = this.instructions[cur_layer][ndx];
+		if(check.type == "G1") inst = check;
+		ndx++;	
 	} 
 	return inst;
 }
@@ -337,12 +375,12 @@ Scene2D.prototype.drawStep=function(cause){
 	if(instructions && instructions.count() > 0){
 			
 		var inst = instructions[this.layer][this.step];
-		var li = this.getLastGInst(this); 
-		var ni = (this.step <= this.instructions[this.layer].count()-1) ? this.instructions[this.layer][this.step+1] : null;
-		
+		var li = this.getLastGInst(this.layer, this.step); 
+	  var ni = this.getNextGInst(this.layer, this.step);
+
 		var d = 0;
 		if(inst.type == "G1" && !cause.reset && cause.fwd){
-			this.addPath(inst, li);
+			this.addPath(inst, li, ni);
 			d = inst.obj.d_traveling;
 		}
 	
@@ -363,9 +401,9 @@ Scene2D.prototype.drawStep=function(cause){
 			this.polylines[pl].front();
 		}
 
-		if(inst != null){
+		if(ni != null){
 		if(cause.reset) this.circle.center(inst.coord.x,inst.coord.y);
-		else if(inst.type == "G1") this.circle.animate(anitime).center(inst.obj.to.x,inst.obj.to.y);
+		else if(inst.type == "G1") this.circle.animate(anitime).center(ni.coord.x,ni.coord.y);
 		else this.circle.animate(anitime).center(inst.coord.x, inst.coord.y);
 		}
 
@@ -385,7 +423,7 @@ Scene2D.prototype.drawStep=function(cause){
     $("#gcode_inst").text(inst.text);
     $("#instruction").text(inst.desc);
 		$("#progress").text("layer: "+(this.layer+1)+" of "+this.instructions.count()
-			      +" // instruction "+(this.num_per_layer[this.layer]+ this.step + 1)+" "+ this.layer+" of "+(this.num_instructions));
+			      +" // instruction "+(this.num_per_layer[this.layer]+ this.step + 1)+" of "+(this.num_instructions));
 
 		//this.text.center(this.w/2, this.h - 3*this.margin/2);
 	}else{

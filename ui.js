@@ -45,11 +45,16 @@ $('#render_adjusted').click(function(evt){
 function updateModel(h){
 
   if(hasGL) scene3d.remove(select_flavor.object); 
-  select_flavor = new outputFlavor(raw_flavor.is, raw_flavor.diameter, h, render_raw);   
+  select_flavor = new outputFlavor(raw_flavor.is.slice(0), raw_flavor.diameter, h, render_raw);   
   
   scene2d.add(select_flavor);
   if(hasGL) scene3d.add(select_flavor.object);
 
+  var build_env = select_flavor.env;
+  var m_size = Math.round(select_flavor.diameter* 100 ) / 100; 
+  var dist = Math.round(build_env.height * 100 ) / 100; 
+  $("#model_material_size").text("Material Size: "+m_size+" mm");
+  $("#model_laser_distance").text("Distance from Base to Laser: "+dist+" mm");
 
 }
 
@@ -181,9 +186,9 @@ function openGCodeFromPath(path) {
       scene3d.add(select_flavor.object);
     }
 
-    var ard_env = getArduinoData();
+    var ard_env = select_flavor.env; 
     var path_print = path.slice(path.lastIndexOf("/")+1);
-    var m_size = Math.round(ard_env.material_size * 100 ) / 100; 
+    var m_size = Math.round(select_flavor.diameter * 100 ) / 100; 
     var dist = Math.round(ard_env.height * 100 ) / 100; 
     $("#model_filename").text("Filename: "+path_print);
     $("#model_material_size").text("Material Size: "+m_size+" mm");
@@ -208,7 +213,7 @@ function openGCodeFromText(name, gcode) {
   }	
 
     var build_env = select_flavor.env;
-    var m_size = Math.round(build_env.material_size * 100 ) / 100; 
+    var m_size = Math.round(select_flavor.diameter* 100 ) / 100; 
     var dist = Math.round(build_env.height * 100 ) / 100; 
     $("#model_filename").text("Filename: "+name);
     $("#model_material_size").text("Material Size: "+m_size+" mm");
