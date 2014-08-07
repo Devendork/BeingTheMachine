@@ -128,7 +128,7 @@ Scene2D.prototype.addGhostPath= function(inst,last, next){
 
 Scene2D.prototype.addPath= function(inst,last,next){
 	if(inst.type == "G1" && inst.ext){
-		if (last == null || !last.ext){
+		if (last == null || !last.ext ||last.coord.z != inst.coord.z){
 			var np = [];
 			np.push(inst.coord.x+","+inst.coord.y);
 			this.path.push(np);
@@ -169,15 +169,18 @@ Scene2D.prototype.createPolyline = function(ghost){
 
 Scene2D.prototype.add =function(flavor){
 		this.ebbox = flavor.bbox;
-    //this.step = instruction;
+    this.step = 0;
 		//this.layer = layer;
 		this.instructions = flavor.is;
 
+    this.num_per_layer = [];
+    this.ebbox = flavor.bbox;
+
 		var count = 0;
 
-		for(var i in instructions){
+		for(var i in this.instructions){
 			this.num_per_layer.push(count);
-			count += instructions[i].length + 1;
+			count += this.instructions[i].length + 1;
 		}
 		this.num_instructions = count;
 
@@ -372,11 +375,13 @@ inc - {next: true/false, forward: true/false, new_layer: true/false}
 Scene2D.prototype.drawStep=function(cause){
 
 
-	if(instructions && instructions.count() > 0){
-			
-		var inst = instructions[this.layer][this.step];
+	if(this.instructions && this.instructions.count() > 0){
+		
+
+		var inst = this.instructions[this.layer][this.step];
 		var li = this.getLastGInst(this.layer, this.step); 
 	  var ni = this.getNextGInst(this.layer, this.step);
+
 
 		var d = 0;
 		if(inst.type == "G1" && !cause.reset && cause.fwd){

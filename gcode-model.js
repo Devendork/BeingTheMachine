@@ -510,9 +510,9 @@ function getArduinoFile(){
   console.log("Material Height = "+select_flavor.height);
   console.log("Material Diameter = "+select_flavor.diameter);
   console.log("Model Height = "+env.model_height);
-  console.log("Model Height from BBOX = "+(flavor.bbox.max.z - flavor.bbox.min.z));
+  console.log("Model Height from BBOX = "+(select_flavor.bbox.max.z - select_flavor.bbox.min.z));
 
-  lines.push("int inst_num = "+ilist.xs.length+";")
+  lines.push("int inst_num = "+ilist.msx.length+";")
   lines.push("const PROGMEM uint8_t xs[] = {"+ilist.msx.join(",")+"};")
   lines.push("const PROGMEM uint8_t ys[] = {"+ilist.msy.join(",")+"};")
   lines.push("const PROGMEM uint8_t ls[] = {"+ilist.ls.join(",")+"};")
