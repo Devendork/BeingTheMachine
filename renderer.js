@@ -407,9 +407,9 @@ Scene2D.prototype.drawStep=function(cause){
 		}
 
 		if(ni != null){
-		if(cause.reset) this.circle.center(inst.coord.x,inst.coord.y);
-		else if(inst.type == "G1") this.circle.animate(anitime).center(ni.coord.x,ni.coord.y);
-		else this.circle.animate(anitime).center(inst.coord.x, inst.coord.y);
+		  if(cause.reset) this.circle.center(inst.coord.x,inst.coord.y);
+		  else if(inst.type == "G1") this.circle.animate(anitime).center(ni.coord.x,ni.coord.y);
+		  else this.circle.animate(anitime).center(inst.coord.x, inst.coord.y);
 		}
 
 		if(inst.type == "G1"){

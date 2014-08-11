@@ -84,6 +84,15 @@ outputFlavor.prototype.boundingBox = function(){
       }
     }
   }
+  
+  for(var l in this.is){
+    for(var i in this.is[l]){
+      inst = this.is[l][i];
+      if(inst.coord.x == null) inst.coord.x = bbox.min.x; 
+      if(inst.coord.y == null) inst.coord.y = bbox.min.y; 
+    }
+  }
+  
   return bbox;
 }
 
@@ -198,6 +207,7 @@ outputFlavor.prototype.createObjectFromInstructions = function(instructions) {
       layer.type[grouptype] = {
         type: grouptype,
         feed: i.obj.d_extruding,	
+        feed: true,
         extruding: i.ext,
         color: color,
         segmentCount: 0,
@@ -234,7 +244,7 @@ outputFlavor.prototype.createObjectFromInstructions = function(instructions) {
           var p1 = last.coord; //where it's at
           var p2 = inst.coord; //where it's going once the instruction executes
 
-          if(last.ext) addSegment(inst, p1, p2);
+          if(last.ext && inst.type == "G1") addSegment(inst, p1, p2);
         }
         last = inst;
       }
@@ -370,7 +380,7 @@ outputFlavor.prototype.createPlane = function (instructions){
 
 
 outputFlavor.prototype.toMicroseconds = function(layer_id,x, y){ 
-  
+
   var build_env = this.env;
   var adj_height = build_env.height - (layer_id)*this.height;
   
@@ -391,6 +401,7 @@ outputFlavor.prototype.toMicroseconds = function(layer_id,x, y){
     if(theta.x > 110 || theta.x < 80){
     console.log("Error - theta out of range: "+theta.x );
     console.log(this.bbox.min.x, x);
+    console.log(x, y);
   }
 
   var ms_per_theta = 10;

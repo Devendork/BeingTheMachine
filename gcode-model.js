@@ -21,7 +21,7 @@ function createGeometryFromGCode(gcode) {
 
 
   var has_z = false;
-  var lastLine = {x:0, y:0, z:0, e:0, f:0, extruding:false};
+  var lastLine = {x:null, y:null, z:0, e:0, f:0, extruding:false};
 
   var layers = [];
   var layer = undefined;
@@ -111,6 +111,7 @@ function createGeometryFromGCode(gcode) {
 
     },
 
+
     G21: function(args) {
       // G21: Set Units to Millimeters
       // Example: G21
@@ -126,6 +127,22 @@ function createGeometryFromGCode(gcode) {
 
         instructions[instructions.count()-1].push(i);
     },
+
+    G28: function(args) {
+      // G28: Return to Origin
+      // Example: G28
+      // no op at this point
+      var i = {
+        text: "G28",
+        desc: "Move To Origin",
+        type: "G28",
+        ext: extruder_value,
+        coord: {x:lastLine.x, y:lastLine.y, z:lastLine.z},
+        obj:null};
+
+        instructions[instructions.count()-1].push(i);
+    },
+
 
     G90: function(args) {
       // G90: Set to Absolute Positioning
@@ -310,6 +327,18 @@ function createGeometryFromGCode(gcode) {
         extruder_value = false;
 
     },
+    M109: function(args) {
+      var i = {
+        text: "M109",
+        desc: "Set Extruder Temperature and Wait", 
+        type:"M109",
+        ext: false,
+        coord: {x:lastLine.x, y:lastLine.y, z:lastLine.z},
+        obj:null};
+        instructions[instructions.count()-1].push(i);
+
+    },
+
 
     M113: function(args) {
       var itext = (args.s !== undefined) ? "S"+args.s : "";
@@ -398,26 +427,16 @@ function createGeometryFromGCode(gcode) {
   console.log("Material size is "+material_size);
 
 
-  console.log("After Initial input");
-  checkUndefined(instructions);
 
   raw_flavor = new outputFlavor(instructions, material_size, material_size, true);
- console.log("raw flavor test :"+raw_flavor.boundingBox());
+  console.log("raw flavor test :"+raw_flavor.boundingBox());
 
-  console.log("After Raw ");
-  checkUndefined(raw_flavor.is);
 
 
   $("#force_height").val(material_size);
   $("#default_height").html(material_size);
 
   select_flavor = new outputFlavor(instructions.slice(0), material_size, material_size, render_raw);
-   console.log("After SElect");
-  checkUndefined(select_flavor.is);
-
-
-  
-
 
 
 }
@@ -485,11 +504,7 @@ function createArduinoInstructions(){
         }else{
           ilist.ls.push(0);
         }
-        
-        last.x = inst.coord.x;
-        last.y = inst.coord.y;
-        last.z = inst.coord.z;
-        last.ext = inst.ext;
+        last.ext = inst.ext; 
     }
     ilist.layer_ids.push(i_count+1); //add 1 since we want the id of the first instruction on the next layer
   }
