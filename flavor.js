@@ -16,6 +16,8 @@ function outputFlavor(instructions, diameter, height, raw){
     console.log("New Flavor Created");
     console.log("Height: "+this.height);
     console.log("Raw?: "+raw);
+    console.log("Bbox");
+    console.log(this.env);
 }
 
 outputFlavor.prototype.is = [];
