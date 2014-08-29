@@ -106,7 +106,7 @@ outputFlavor.prototype.setupEnvironment = function(){
   build_env.dim = {x: bbox.max.x - bbox.min.x, y: bbox.max.y - bbox.min.y};
   build_env.ctr = {x: bbox.min.x + build_env.dim.x/2., y: bbox.min.y + build_env.dim.y/2.};
   build_env.max_dim = (build_env.dim.x > build_env.dim.y) ? build_env.dim.x: build_env.dim.y;
-  var dist_to_top_layer = (build_env.max_dim/2.) / Math.tan(deg_to_rad(10));
+  var dist_to_top_layer = (build_env.max_dim/2.) / Math.tan(deg_to_rad(half_range));
   build_env.height = dist_to_top_layer + this.height*(this.is.length+1);
   build_env.model_height = build_env.height - dist_to_top_layer;
   return build_env;
@@ -385,7 +385,8 @@ outputFlavor.prototype.toMicroseconds = function(layer_id,x, y){
 
   var build_env = this.env;
   var adj_height = build_env.height - (layer_id)*this.height;
-  
+  var byte_adj = half_range / 10;
+
 
   if(layer_id == 0 && x == 0 && y == 0){ //assume this is a starting block
     x = this.bbox.min.x;
@@ -400,23 +401,28 @@ outputFlavor.prototype.toMicroseconds = function(layer_id,x, y){
     //hy: rad_to_deg(Math.atan((y - build_env.ctr.y)/build_env.height)) +  90.
   };  
 
-    if(theta.x > 110 || theta.x < 80){
+    var low = 90 - half_range;
+    var high = 90 + half_range;
+
+    if(theta.x > high || theta.x < low){
     console.log("Error - theta out of range: "+theta.x );
     console.log(this.bbox.min.x, x);
     console.log(x, y);
   }
 
   var ms_per_theta = 10;
-  var min_ms = 800;
-
+  var min_ms = (1500 - half_range*10) - 600;
 
   var ms = {
     x: parseInt(theta.x*ms_per_theta - min_ms),
     y: parseInt(theta.y*ms_per_theta - min_ms)
   };
-  
+
+  ms.x = parseInt(ms.x / byte_adj);
+  ms.y = parseInt(ms.y / byte_adj);
+
   if(ms.x > 200 || ms.x < 0){
-    console.log("Error - ms out of range");
+    console.log("Error - ms out of range - for one byte");
   }
 
 
@@ -427,12 +433,16 @@ outputFlavor.prototype.toMicroseconds = function(layer_id,x, y){
 outputFlavor.prototype.fromMicroseconds = function(layer_id,x, y){ 
   var ms_per_theta = 10;
   var build_env = this.env;
-  var min_ms = 800;
+  var byte_adj = half_range/10;
+
+  
+  //var min_ms = 800;
+  var min_ms = (1500 - half_range*10) - 600;
   var adj_height = build_env.height - (layer_id)*this.height;
   
   var theta = {
-    x: (min_ms+x)/ms_per_theta,
-    y: (min_ms+y)/ms_per_theta 
+    x: (min_ms+x*byte_adj)/ms_per_theta,
+    y: (min_ms+y*byte_adj)/ms_per_theta 
   };
 
   var coord = {

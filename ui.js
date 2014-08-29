@@ -105,7 +105,7 @@ function arduino(){
   file_lines.push("//// Values generated for "+$("#model_filename").text());
   file_lines.push("//// Material Diameter "+select_flavor.diameter); 
   file_lines.push("//// Material Height"+select_flavor.height); 
-  var file = loadFile("Arduino/Template/Template.ino", function(arduino){
+  var file = loadFile("Arduino/Template.ino", function(arduino){
   var lines = arduino.split('\n');
    console.log("num lines "+lines.length);
 

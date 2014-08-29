@@ -1,6 +1,8 @@
 var extruder_value = false;
 var raw_flavor = undefined;
 var select_flavor = undefined;
+var half_range = 10;
+
 
 //we need a function that doesn't return object but has the parsing
 //2D/3D independent
@@ -528,12 +530,12 @@ function getArduinoFile(){
   console.log("Model Height from BBOX = "+(select_flavor.bbox.max.z - select_flavor.bbox.min.z));
 
   lines.push("int inst_num = "+ilist.msx.length+";")
-  lines.push("const PROGMEM uint8_t xs[] = {"+ilist.msx.join(",")+"};")
-  lines.push("const PROGMEM uint8_t ys[] = {"+ilist.msy.join(",")+"};")
-  lines.push("const PROGMEM uint8_t ls[] = {"+ilist.ls.join(",")+"};")
-  lines.push("const PROGMEM uint8_t bx[] = {"+ilist.bx.join(",")+"};")
-  lines.push("const PROGMEM uint8_t by[] = {"+ilist.by.join(",")+"};")
-  lines.push("const PROGMEM uint16_t layers[] = {"+ilist.layer_ids.join(",")+"};")
+    lines.push("const PROGMEM uint8_t xs[] = {"+ilist.msx.join(",")+"};")
+    lines.push("const PROGMEM uint8_t ys[] = {"+ilist.msy.join(",")+"};")
+    lines.push("const PROGMEM uint8_t ls[] = {"+ilist.ls.join(",")+"};")
+    lines.push("const PROGMEM uint8_t bx[] = {"+ilist.bx.join(",")+"};")
+    lines.push("const PROGMEM uint8_t by[] = {"+ilist.by.join(",")+"};")
+   lines.push("const PROGMEM uint16_t layers[] = {"+ilist.layer_ids.join(",")+"};")
   return lines;  
 
   return this;
