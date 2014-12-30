@@ -174,7 +174,7 @@ function checkKey(e){
 
 function openGCodeFromPath(path) {
   $('#openModal').modal('hide');
-  if (hasGL && select_flavor.object) {
+  if (hasGL && select_flavor != undefined && select_flavor.object) {
     scene3d.remove(select_flavor.object);
   }
 
