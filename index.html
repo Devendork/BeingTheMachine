@@ -78,7 +78,8 @@
             <li><a href="javascript:openDialog()">Load Model</a></li>
             <li><a href="javascript:about()">About</a></li>
             <li><a href="javascript:options()">Options</a></li>
-            <li><a href="javascript:arduino()">Download Code for Arduino</a></li>
+            <li><a href="javascript:arduino()">To Arduino</a></li>
+            <li><a href="javascript:sdcard()">To SD Card</a></li>
 	</ul>
 	<ul class="nav pull-right">
 		            <li><a href="https://github.com/Devendork/BeingTheMachine" target="_blank">Code on GitHub</a></li>
@@ -150,13 +151,19 @@
         How would you like the paths rendered:<br>
         <input id="render_raw" name= "render" type="radio" value="raw"/> Exactly From G-Code<br>
         <input id="render_adjusted" name= "render" type="radio" value="adjusted"/> Adjusted to reflect how it will actually draw with Arduino
-        </p>
+	       </p>
 
-        <p>Force Material Height:<br>
-        <input id="force_height" name="force_height" type="number"   size = "4" min = "0" autofucus /> mm<br>
+         <p>Specify Distance to Wall or Half-Angle</p>
+        <input id="force_distance" name="force_distance" type="number"   size = "1" min = "0" autofucus /> mm or <input id="force_halfangle" name="force_halfangle" type="number"   size = "1" min = "0" autofucus /> degrees
+
+        <p>Set Angle Offset:<br>
+        <input id="force_angle" name="force_angle" type="number"   size = "2" min = "0" autofucus /> degrees<br>
+         <small>this assumes that you will use an SD card to store the instruction set</small></p>
+        
+       <p>Force Material Height:<br>
+        <input id="force_height" name="force_height" type="number"   size = "2" min = "0" autofucus /> mm<br>
         <small>this original g-code layer height for this file is <span id="default_height">0</span> mm</small></p>
         
-      
       </form>
        </div>
 

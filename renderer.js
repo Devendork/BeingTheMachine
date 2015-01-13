@@ -22,6 +22,9 @@ function Scene2D(element){
 
 	var that = this;
 
+	//go through all of the y coordinates and flip them
+
+
 	$(window).on('resize', function(){
 		that.resize();
 	});
@@ -169,7 +172,7 @@ Scene2D.prototype.createPolyline = function(ghost){
 
 Scene2D.prototype.add =function(flavor){
 		this.ebbox = flavor.bbox;
-    this.step = 0;
+    	this.step = 0;
 		//this.layer = layer;
 		this.instructions = flavor.is;
 
@@ -264,7 +267,7 @@ Scene2D.prototype.updatePlane = function(){
 		i++;
 	}
 
-	var zpos = (instruction == null)? 0 : instruction.coord.z;
+	var zpos = (instruction == null)? 0 : -instruction.coord.z;
 	var center = new THREE.Vector3(
 		this.ebbox.min.x + ((this.ebbox.max.x - this.ebbox.min.x) / 2),
 		this.ebbox.min.y + ((this.ebbox.max.y - this.ebbox.min.y) / 2),
@@ -468,11 +471,9 @@ function create3DScene(element) {
       near   = 1,
       far    = 10000,
       camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
-  //camera.rotationAutoUpdate = true;
   //camera.position.x = 0;
-  //camera.position.y = 500;
-  camera.position.z = 300;
-  //camera.lookAt(plane.position);
+  //camera.position.y = 0;
+  camera.position.z = -300;
   scene3d.add(camera);
   controls = new THREE.TrackballControls(camera);
   controls.noPan = true;

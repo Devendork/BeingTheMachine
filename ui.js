@@ -1,5 +1,4 @@
 var render_raw = true;
-
 var scene2d = null;
 var scene3d = null;
 
@@ -8,16 +7,56 @@ $('#dimension_3d').attr('checked', 'checked');
 $('#render_raw').attr('checked', 'checked');
 
 
+$('#force_angle').change(function(evt){
+  var a = $('#force_angle').val();
+  console.log("force angle to "+a);
+  updateModel(select_flavor.height, a, select_flavor.distance_to_wall, select_flavor.half_angle);
+});
+
+
+$('#force_halfangle').change(function(evt){
+  var a = $('#force_halfangle').val();
+  if(a > 38){ 
+    a = 38;
+    $('#force_halfangle').val(a);
+  }
+  console.log("force half angle to "+a);
+  updateModel(select_flavor.height, select_flavor.angle, -1, a);
+
+  var d = $('#force_distance').val();
+  console.log("distance was "+d);
+  $('#force_distance').val(select_flavor.distance_to_wall);
+  
+});
+
+$('#force_distance').change(function(evt){
+  var d = $('#force_distance').val();
+  console.log("force distance to "+d);
+  updateModel(select_flavor.height, select_flavor.angle, d, -1);
+
+  var a = $('#force_halfangle').val();
+  console.log("half angle was "+a);
+
+  //make sure that the half angle is in range for the hardware
+  if(a > 38){
+     updateModel(select_flavor.height, select_flavor.angle, -1, 38);
+      $('#force_distance').val(select_flavor.distance_to_wall);
+  }else{
+    $('#force_halfangle').val(select_flavor.half_angle);
+  }
+  
+});
+
 $('#force_height').change(function(evt){
   var h = $('#force_height').val();
   console.log("force height to "+h);
-  updateModel(h);
+  updateModel(h, select_flavor.angle, select_flavor.distance_to_wall, select_flavor.half_angle);
 });
 
 $('#dimension_2d').click(function (evt){
   console.log("2d clicked");
   $('#force_height').val(0);
-  updateModel(0);
+  updateModel(0, select_flavor.angle, select_flavor.distance_to_wall, select_flavor.half_angle);
 });
 
 
@@ -25,27 +64,27 @@ $('#dimension_3d').click(function (evt){
   console.log("3d clicked");
   var h = $('#force_height').val();
   if(h == 0) h = raw_flavor.height;
-  $('#force_height').val(h);
+  $('#force_height').val(h, select_flavor.angle, select_flavor.distance_to_wall, select_flavor.half_angle);
   updateModel(h);
 });
 
 $('#render_raw').click(function(evt){
   console.log("render_raw");
   render_raw = true;
-  updateModel(select_flavor.height);
+  updateModel(select_flavor.height, select_flavor.angle, select_flavor.distance_to_wall, select_flavor.half_angle);
 });
 
 
 $('#render_adjusted').click(function(evt){
   console.log("render_adjusted");
   render_raw = false;
-  updateModel(select_flavor.height);
+  updateModel(select_flavor.height, select_flavor.angle, select_flavor.distance_to_wall, select_flavor.half_angle);
 });
 
-function updateModel(h){
+function updateModel(h, a, dist, ha){
 
   if(hasGL) scene3d.remove(select_flavor.object); 
-  select_flavor = new outputFlavor(raw_flavor.is.slice(0), raw_flavor.diameter, h, render_raw);   
+  select_flavor = new outputFlavor(raw_flavor.is.slice(0), raw_flavor.diameter, h, a,  render_raw, dist, ha);   
   
   scene2d.add(select_flavor);
   if(hasGL) scene3d.add(select_flavor.object);
@@ -100,7 +139,7 @@ function loadFile(path, callback /* function(contents) */) {
 }
 
 function arduino(){
-	var data = getArduinoFile();
+  var data = getArduinoFile();
   var file_lines = [];
   file_lines.push("//// Values generated for "+$("#model_filename").text());
   file_lines.push("//// Material Diameter "+select_flavor.diameter); 
@@ -129,8 +168,13 @@ function arduino(){
     window.open('data:text/something.ino;charset=utf-8,' + escape(new_file));
   });
 
-  
+}
 
+function sdcard(){
+  console.log("sd card");
+  var data = getSDInstructions();
+  var new_file = data.join("\n");
+  window.open('data:text/sd_file.txt;charset=utf-8,' + escape(new_file));
 }
 
 function about() {
@@ -153,20 +197,20 @@ function checkKey(e){
 
     e = e || window.event;
     if (e.keyCode == '37') {
-		    // left arrow
-		   scene2d.prevStep();
-		}
-	else if (e.keyCode == '39') {
-		    //right arrow
-		scene2d.nextStep();	
-	}
-	else if(e.keyCode == '38'){
-		//up arrow
-		scene2d.nextLayer();
-	}else if(e.keyCode == '40'){
-		//down arrow
-		scene2d.prevLayer();
-	}
+        // left arrow
+       scene2d.prevStep();
+    }
+  else if (e.keyCode == '39') {
+        //right arrow
+    scene2d.nextStep(); 
+  }
+  else if(e.keyCode == '38'){
+    //up arrow
+    scene2d.nextLayer();
+  }else if(e.keyCode == '40'){
+    //down arrow
+    scene2d.prevLayer();
+  }
 
 }
 
@@ -194,6 +238,7 @@ function openGCodeFromPath(path) {
     $("#model_material_size").text("Material Size: "+m_size+" mm");
     $("#model_laser_distance").text("Distance from Base to Laser: "+dist+" mm");
 
+
     localStorage.setItem('last-loaded', path);
     localStorage.removeItem('last-imported');
   });
@@ -209,8 +254,8 @@ function openGCodeFromText(name, gcode) {
     scene2d.add(select_flavor);
   
   if(hasGL){
-	  scene3d.add(select_flavor.object);
-  }	
+    scene3d.add(select_flavor.object);
+  } 
 
     var build_env = select_flavor.env;
     var m_size = Math.round(select_flavor.diameter* 100 ) / 100; 
@@ -218,8 +263,6 @@ function openGCodeFromText(name, gcode) {
     $("#model_filename").text("Filename: "+name);
     $("#model_material_size").text("Material Size: "+m_size+" mm");
     $("#model_laser_distance").text("Distance from Base to Laser: "+dist+" mm");
-
-    
 
     localStorage.setItem('last-imported', gcode);
     localStorage.setItem('last-filename', name);

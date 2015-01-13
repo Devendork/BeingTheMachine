@@ -1,7 +1,10 @@
-function outputFlavor(instructions, diameter, height, raw){
+function outputFlavor(instructions, diameter, height, angle, raw, distance_to_wall, half_angle){
     this.is = instructions;
     this.diameter = diameter;
-    this.height = height;
+    this.angle = angle;
+    this.half_angle = half_angle;
+    this.distance_to_wall = distance_to_wall;
+    this.height = height; //material height
     this.updateInstructionHeight(this.is, this.height);
     this.bbox = this.boundingBox();
     this.env = this.setupEnvironment(); 
@@ -23,12 +26,18 @@ function outputFlavor(instructions, diameter, height, raw){
 outputFlavor.prototype.is = [];
 outputFlavor.prototype.diameter= 0;
 outputFlavor.prototype.height = 0;
+outputFlavor.prototype.half_angle = 10;
+outputFlavor.prototype.distance_to_wall = 0;
+outputFlavor.prototype.angle = 0;//added 1-5-15
 outputFlavor.prototype.bbox = undefined;
 outputFlavor.prototype.env = undefined;
 outputFlavor.prototype.a_is = [];
 outputFlavor.prototype.plane = undefined;
 outputFlavor.prototype.object = undefined;
-  
+
+
+
+//If I'm not mistaken this will just run once everytime an option is changed  
 outputFlavor.prototype.updateInstructionHeight = function(is, height){
   for(var l in is){
     for(var i in is[l]){
@@ -39,6 +48,7 @@ outputFlavor.prototype.updateInstructionHeight = function(is, height){
 } 
 
 
+//instructions in arduino format for output
 outputFlavor.prototype.arduinoInstructions = function(){
   var a_is = [];
 
@@ -102,13 +112,28 @@ outputFlavor.prototype.boundingBox = function(){
 outputFlavor.prototype.setupEnvironment = function(){
   var build_env = [];
   var bbox = this.bbox;
+  var dist_to_top_layer = -1;
+  build_env.model_height = this.height*(this.is.length+1);
+  build_env.angle = this.angle; //this is the offset angle from center
   build_env.material_size= this.diameter;
   build_env.dim = {x: bbox.max.x - bbox.min.x, y: bbox.max.y - bbox.min.y};
   build_env.ctr = {x: bbox.min.x + build_env.dim.x/2., y: bbox.min.y + build_env.dim.y/2.};
   build_env.max_dim = (build_env.dim.x > build_env.dim.y) ? build_env.dim.x: build_env.dim.y;
-  var dist_to_top_layer = (build_env.max_dim/2.) / Math.tan(deg_to_rad(half_range));
-  build_env.height = dist_to_top_layer + this.height*(this.is.length+1);
-  build_env.model_height = build_env.height - dist_to_top_layer;
+
+
+  if(this.distance_to_wall == -1){
+    if(this.half_angle == -1) console.log("ERROR: both distance and half angle undefined");
+    var dist_to_top_layer = (build_env.max_dim/2.) / Math.tan(deg_to_rad(this.half_angle));
+    build_env.height = parseInt(dist_to_top_layer + build_env.model_height); 
+    this.distance_to_wall = build_env.height;
+
+  }else{
+    build_env.height = this.distance_to_wall;
+    var opp = build_env.max_dim/2.;
+    var dist_to_top_layer = build_env.height - build_env.model_height;
+    this.half_angle = parseInt(rad_to_deg(Math.atan(opp/dist_to_top_layer)));
+  }
+
   return build_env;
 }
 
@@ -141,42 +166,6 @@ outputFlavor.prototype.cleanInstructions = function(a_is){
           layer.push(inst);
         }
          
-
-        //delete if this and last are same point
-        
-        
-        /*
-        if(last != undefined){
-          //the head is at last and going to inst
-          if(!last.ext && inst.ext){
-            layer.push(path[0]); //if it isn't extruding and has more than one element, simplify
-
-            path = [];
-            path.push(inst);
-            
-          
-          }else if(last.ext && !inst.ext){
-            if(isValidDistance(path[0].obj.adj, inst.obj.adj, mat2)){
-              layer.push(path[0]);
-            }
-
-            path = [];
-            path.push(inst);
-
-          }else if(last.ext && inst.ext){
-            //check to see if we've moved far enough
-            
-            if(isValidDistance(inst.obj.adj, path[0].obj.adj, mat2)){
-              layer.push(path[0]);
-              path = [];
-              path.push(inst);
-            }
-         
-          }else{
-            path.push(inst);
-          }
-        }
-        */
         last = inst;
         }
 
@@ -229,8 +218,8 @@ outputFlavor.prototype.createObjectFromInstructions = function(instructions) {
 
 
     group.segmentCount++;
-    geometry.vertices.push(new THREE.Vector3(p1.x, p1.y, p1.z));
-    geometry.vertices.push(new THREE.Vector3(p2.x, p2.y, p2.z));
+    geometry.vertices.push(new THREE.Vector3(p1.x, p1.y, -p1.z));
+    geometry.vertices.push(new THREE.Vector3(p2.x, p2.y, -p2.z));
     geometry.colors.push(group.color);
     geometry.colors.push(group.color);
   }
@@ -268,14 +257,16 @@ outputFlavor.prototype.createObjectFromInstructions = function(instructions) {
   // Center
   var scale = 2; // TODO: Auto size
 
+  console.log(object.position);
+
   var center = new THREE.Vector3(
     bbox.min.x + ((bbox.max.x - bbox.min.x) / 2),
     bbox.min.y + ((bbox.max.y - bbox.min.y) / 2),
-    bbox.min.z + ((bbox.max.z - bbox.min.z) / 2));
+    bbox.min.z + ((bbox.max.z - bbox.min.z) / 2)
+    );
     console.log("center ", center);
-
-    object.position = center.multiplyScalar(-scale);
-
+    object.rotation.z = Math.PI;
+    object.position = center.multiplyScalar(scale);
     object.scale.multiplyScalar(scale);
 
     return object;
@@ -295,7 +286,7 @@ outputFlavor.prototype.createPlane = function (instructions){
   var center = new THREE.Vector3(
       bbox.min.x + ((bbox.max.x - bbox.min.x) / 2),
       bbox.min.y + ((bbox.max.y - bbox.min.y) / 2), 
-      bbox.min.z);
+      -bbox.min.z);
   
   plane.position = center;
   this.object.add(plane);	
@@ -314,8 +305,8 @@ outputFlavor.prototype.createPlane = function (instructions){
       axis = "x";
       dimension = bbox.max.x - bbox.min.x;
       line_objects[i].vertices.push(
-        new THREE.Vector3(bbox.min.x, bbox.min.y -5 , bbox.min.z),
-        new THREE.Vector3(bbox.max.x, bbox.min.y -5 , bbox.min.z)
+        new THREE.Vector3(bbox.min.x, bbox.min.y -5 , -bbox.min.z),
+        new THREE.Vector3(bbox.max.x, bbox.min.y -5 , -bbox.min.z)
       );
     }
 
@@ -323,8 +314,8 @@ outputFlavor.prototype.createPlane = function (instructions){
       axis = "y";
       dimension = bbox.max.y - bbox.min.y;
       line_objects[i].vertices.push(
-        new THREE.Vector3(bbox.min.x-5, bbox.min.y, bbox.min.z),
-        new THREE.Vector3(bbox.min.x-5, bbox.max.y, bbox.min.z)
+        new THREE.Vector3(bbox.min.x-5, bbox.min.y, -bbox.min.z),
+        new THREE.Vector3(bbox.min.x-5, bbox.max.y, -bbox.min.z)
       );
     }
 
@@ -332,8 +323,8 @@ outputFlavor.prototype.createPlane = function (instructions){
       axis = "z";
       dimension = bbox.max.z - bbox.min.z;
       line_objects[i].vertices.push(
-        new THREE.Vector3(bbox.min.x-5, bbox.min.y -5 , bbox.min.z),
-        new THREE.Vector3(bbox.min.x-5, bbox.min.y -5 , bbox.max.z)
+        new THREE.Vector3(bbox.min.x-5, bbox.min.y -5 , -bbox.min.z),
+        new THREE.Vector3(bbox.min.x-5, bbox.min.y -5 , -bbox.max.z)
       );
 
     }
@@ -355,21 +346,24 @@ outputFlavor.prototype.createPlane = function (instructions){
     if(i == 0){
       text.position.x =  bbox.min.x + 0.5*dimension + centerOffset;
       text.position.y =  bbox.min.y - 10;
-      text.position.z = z;
+      text.position.z = -z;
+      text.rotation.x = Math.PI;
     }
 
     if(i == 1){
       text.position.x = bbox.min.x - 10;
       text.position.y = bbox.min.y + (dimension * 0.5) + centerOffset;
-      text.position.z = z;
+      text.position.z = -z;
       text.rotation.z = Math.PI * 0.5;
+      text.rotation.y = Math.PI;
     }
 
     if(i == 2){
       text.position.x = bbox.min.x-5;
       text.position.y = bbox.min.y-10; 
-      text.position.z = bbox.min.z + (dimension * 0.5)- centerOffset;
+      text.position.z = -1 * (bbox.min.z + (dimension * 0.5)- centerOffset);
       text.rotation.y = Math.PI * 0.5;
+      text.rotation.x = Math.PI;
     }
 
     this.object.add(text);	
@@ -381,11 +375,11 @@ outputFlavor.prototype.createPlane = function (instructions){
 }
 
 
-outputFlavor.prototype.toMicroseconds = function(layer_id,x, y){ 
+//updated 1-10 - no longer adjusting parameters to the size of a byte
+outputFlavor.prototype.toMicroseconds = function(layer_id, x, y){ 
 
   var build_env = this.env;
-  var adj_height = build_env.height - (layer_id)*this.height;
-  var byte_adj = half_range / 10;
+  var adj_height = build_env.height - (layer_id)*this.height; //height of current layer
 
 
   if(layer_id == 0 && x == 0 && y == 0){ //assume this is a starting block
@@ -397,12 +391,10 @@ outputFlavor.prototype.toMicroseconds = function(layer_id,x, y){
   var theta = {
     x: rad_to_deg(Math.atan((x - build_env.ctr.x)/adj_height)) +  90,
     y: rad_to_deg(Math.atan((y - build_env.ctr.y)/adj_height)) +  90.
-    //hx: rad_to_deg(Math.atan((x - build_env.ctr.x)/build_env.height)) +  90,
-    //hy: rad_to_deg(Math.atan((y - build_env.ctr.y)/build_env.height)) +  90.
   };  
 
-    var low = 90 - half_range;
-    var high = 90 + half_range;
+  var low = 90 - build_env.half_range;
+  var high = 90 + build_env.half_range;
 
     if(theta.x > high || theta.x < low){
     console.log("Error - theta out of range: "+theta.x );
@@ -410,39 +402,27 @@ outputFlavor.prototype.toMicroseconds = function(layer_id,x, y){
     console.log(x, y);
   }
 
-  var ms_per_theta = 10;
-  var min_ms = (1500 - half_range*10) - 600;
+  var ms_per_theta = 10; //this is hardware dependent (2400 - 600 = 1800 1800/180 = 10)
 
   var ms = {
-    x: parseInt(theta.x*ms_per_theta - min_ms),
-    y: parseInt(theta.y*ms_per_theta - min_ms)
+    x: parseInt(theta.x*ms_per_theta + 600),
+    y: parseInt(theta.y*ms_per_theta + 600)
   };
-
-  ms.x = parseInt(ms.x / byte_adj);
-  ms.y = parseInt(ms.y / byte_adj);
-
-  if(ms.x > 200 || ms.x < 0){
-    console.log("Error - ms out of range - for one byte");
-  }
-
 
   return ms;  
 }
 
 //to do figure out why microseconds isn't writing the full range
 outputFlavor.prototype.fromMicroseconds = function(layer_id,x, y){ 
-  var ms_per_theta = 10;
+  var ms_per_theta = 10; //this is hardware dependent (2400 - 600 = 1800 1800/180 = 10)
   var build_env = this.env;
-  var byte_adj = half_range/10;
-
   
-  //var min_ms = 800;
-  var min_ms = (1500 - half_range*10) - 600;
+  //var min_ms = (1500 - half_range*ms_per_theta) - 600;
   var adj_height = build_env.height - (layer_id)*this.height;
   
   var theta = {
-    x: (min_ms+x*byte_adj)/ms_per_theta,
-    y: (min_ms+y*byte_adj)/ms_per_theta 
+    x: (x - 600) /ms_per_theta,
+    y: (y - 600) /ms_per_theta 
   };
 
   var coord = {

@@ -1,8 +1,6 @@
 var extruder_value = false;
 var raw_flavor = undefined;
 var select_flavor = undefined;
-var half_range = 10;
-
 
 //we need a function that doesn't return object but has the parsing
 //2D/3D independent
@@ -56,7 +54,7 @@ function createGeometryFromGCode(gcode) {
     var obj = {
       to: p2,
       speed:s,
-      coords: {dx: dx, dy:dy, dz:dz},  
+      //coords: {dx: dx, dy:dy, dz:dz},  
       d_traveling: move_distance,
       d_extruding: e,
     }
@@ -409,6 +407,7 @@ function createGeometryFromGCode(gcode) {
   var most = 0;
   var count = 0;
   var material_size = 0;
+  var angle = 0;
 
   if(layer_heights.length > 1){ 
     for(var i in layer_heights){
@@ -429,17 +428,27 @@ function createGeometryFromGCode(gcode) {
   console.log("Material size is "+material_size);
 
 
+ for(var l in instructions){
+    for(var i in instructions[l]){
+      instructions[l][i].coord.y = instructions[l][i].coord.y * -1;
+      //console.log(instructions[l][i]);
+    }
+  }
 
-  raw_flavor = new outputFlavor(instructions, material_size, material_size, true);
+
+
+  raw_flavor = new outputFlavor(instructions, material_size, material_size, angle, true, -1, 10);
   console.log("raw flavor test :"+raw_flavor.boundingBox());
 
 
 
   $("#force_height").val(material_size);
+  $("#force_angle").val(angle);
   $("#default_height").html(material_size);
+  $("#force_halfangle").val(raw_flavor.half_angle);
+  $("#force_distance").val(raw_flavor.distance_to_wall);
 
-  select_flavor = new outputFlavor(instructions.slice(0), material_size, material_size, render_raw);
-
+  select_flavor = new outputFlavor(instructions.slice(0), material_size, material_size, angle, render_raw, raw_flavor.distance_to_wall, raw_flavor.half_angle);
 
 }
 
@@ -471,9 +480,58 @@ function rad_to_deg(x){
 function deg_to_rad(x){
   return  x * Math.PI / 180;
 }
+
+
+function getSDInstructions(){
+  var flavor = select_flavor;
+  var ilist = [];
+  var last = {x:flavor.bbox.min.x, y:flavor.bbox.min.y,z:flavor.bbox.min.z,  ext:false};
+  
+  ilist.push("h"+select_flavor.half_angle);
+
+
+  var bx = [flavor.bbox.min.x, flavor.bbox.max.x, flavor.bbox.max.x, flavor.bbox.min.x];
+  var by = [flavor.bbox.min.y, flavor.bbox.min.y, flavor.bbox.max.y, flavor.bbox.max.y];
+  var raw_x;
+  var raw_y;
+
+  for(var i in bx){
+    var ms  = select_flavor.toMicroseconds(0, bx[i], by[i]);
+    bx[i] = ms.x;
+    by[i] = ms.y;
+  }
+
+  ilist.push("x"+bx.join());
+  ilist.push("y"+by.join());
+
+  var i_count = 0;
+  var layer_count = 0;
+
+  //go through and make the instructions
+  for(var l in flavor.a_is){
+    for(var i in flavor.a_is[l]){
+      var inst = flavor.a_is[l][i];
+        
+        raw_x = inst.obj.microseconds.x;
+        raw_y = inst.obj.microseconds.y;
+
+        
+        if(last.ext == true) ilist.push("g"+i_count+","+raw_x+","+raw_y);
+        else ilist.push("p"+i_count+","+raw_x+","+raw_y);
+        
+        last.ext = inst.ext; 
+        i_count++;
+    }
+    layer_count++;
+    ilist.push("l"+layer_count+","+raw_x+","+raw_y);
+  }
+   return ilist;
+}
+
 function createArduinoInstructions(){
   var flavor = select_flavor;
   var last = {x:flavor.bbox.min.x, y:flavor.bbox.min.y,z:flavor.bbox.min.z,  ext:false};
+  var min_ms = 1500 - select_flavor.half_angle*10;
   var ilist = {
     ls:[],
     msx:[],
@@ -483,11 +541,11 @@ function createArduinoInstructions(){
 
   ilist.bx = [flavor.bbox.min.x, flavor.bbox.max.x, flavor.bbox.max.x, flavor.bbox.min.x];
   ilist.by = [flavor.bbox.min.y, flavor.bbox.min.y, flavor.bbox.max.y, flavor.bbox.max.y];
-
+  
   for(var i in ilist.bx){
     var ms  = select_flavor.toMicroseconds(0, ilist.bx[i], ilist.by[i]);
-    ilist.bx[i] = ms.x;
-    ilist.by[i] = ms.y;
+    ilist.bx[i] = ms.x - min_ms;
+    ilist.by[i] = ms.y - min_ms;
   }
 
   var i_count = 0;
@@ -498,8 +556,10 @@ function createArduinoInstructions(){
       var inst = flavor.a_is[l][i];
 
         i_count++;
-        ilist.msx.push(inst.obj.microseconds.x);
-        ilist.msy.push(inst.obj.microseconds.y);
+        var raw_x = inst.obj.microseconds.x;
+        var raw_y = inst.obj.microseconds.y;
+        ilist.msx.push(raw_x - min_ms);
+        ilist.msy.push(raw_y - min_ms);
         
         if(last.ext == true){
           ilist.ls.push(1);
