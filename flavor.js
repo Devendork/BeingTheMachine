@@ -1,48 +1,59 @@
+//a new output flavor is created everytime an option changes in the options panel
 function outputFlavor(instructions, diameter, height, angle, raw, distance_to_wall, half_angle){
-    this.is = instructions;
-    this.diameter = diameter;
-    this.angle = angle;
-    this.half_angle = half_angle;
-    this.distance_to_wall = distance_to_wall;
-    this.height = height; //material height
-    this.updateInstructionHeight(this.is, this.height);
-    this.bbox = this.boundingBox();
-    this.env = this.setupEnvironment(); 
-    this.a_is = this.arduinoInstructions();
+    //MODEL PARAMS
+    this.is = instructions;                     //raw instrutions
+    this.a_is = [];                              //arduino instructions
+    this.bbox = [];                             //this will store the bounding box of the model
+
+    //MATERIAL PARAMS
+    this.diameter = diameter;                   // material diameter
+    this.material_height = height;              // material height
+
+    //HARDWARE PARAMS
+    this.angle = angle;                         // tilt of the system off the y-axis
+    this.half_angle = half_angle;               // half of the full range of the system (wider range = shorter distance to wall)
     
-    if(!raw) this.is = this.a_is.slice(0);
+    //ENVIRONMENT PARAMS
+    this.env = [];
+    
+    //order matters here
+    this.updateInstructionHeight(this.is, this.material_height);  //updates based on material_height
+    this.bbox = this.boundingBox();             
+    this.env = this.setupEnvironment(distance_to_wall, half_angle); 
+    
 
+    this.a_is = this.arduinoInstructions();     //store instructions as arduino sees them
+    if(!raw) this.is = this.a_is.slice(0);      //if we want to display arduino instructions, copy the array and store as instrucitons
 
+    //RENDER PARAMS
     this.object = this.createObjectFromInstructions(this.is);
     this.plane = this.createPlane(this.is);
 
-    console.log("New Flavor Created");
-    console.log("Height: "+this.height);
-    console.log("Raw?: "+raw);
-    console.log("Bbox");
-    console.log(this.env);
+    console.log("NEW FLAVOR CREATED");
+    console.log(this);
 }
 
 outputFlavor.prototype.is = [];
 outputFlavor.prototype.diameter= 0;
-outputFlavor.prototype.height = 0;
+outputFlavor.prototype.material_height = 0;
 outputFlavor.prototype.half_angle = 10;
-outputFlavor.prototype.distance_to_wall = 0;
+//outputFlavor.prototype.distance_to_wall = 0;
 outputFlavor.prototype.angle = 0;//added 1-5-15
 outputFlavor.prototype.bbox = undefined;
 outputFlavor.prototype.env = undefined;
-outputFlavor.prototype.a_is = [];
 outputFlavor.prototype.plane = undefined;
 outputFlavor.prototype.object = undefined;
+outputFlavor.prototype.a_is = undefined;
+
 
 
 
 //If I'm not mistaken this will just run once everytime an option is changed  
-outputFlavor.prototype.updateInstructionHeight = function(is, height){
+outputFlavor.prototype.updateInstructionHeight = function(is, material_height){
   for(var l in is){
     for(var i in is[l]){
       inst = is[l][i];
-      inst.coord.z = l * height;
+      inst.coord.z = l * material_height;
     }
   }
 } 
@@ -70,7 +81,7 @@ outputFlavor.prototype.arduinoInstructions = function(){
         
           inst.obj.microseconds = this.toMicroseconds(l, inst.coord.x, inst.coord.y);
           ai.coord = this.fromMicroseconds(l, inst.obj.microseconds.x, inst.obj.microseconds.y);
-          ai.coord.z = l * this.height;
+          ai.coord.z = l * this.material_height;
           a_is[l].push(ai);
          }
       }
@@ -104,33 +115,43 @@ outputFlavor.prototype.boundingBox = function(){
       if(inst.coord.y == null) inst.coord.y = bbox.min.y; 
     }
   }
-  
+
+  bbox.dim = {
+    x: Math.abs(bbox.max.x - bbox.min.x), 
+    y: Math.abs(bbox.max.y - bbox.min.y), 
+    z: Math.abs(bbox.max.z - bbox.min.z)
+  };
+
+  //calculate center of box based on instructions
+  bbox.ctr = {
+    x: bbox.min.x + bbox.dim.x/2., 
+    y: bbox.min.y + bbox.dim.y/2.
+  };
+
+  //store the greater of the x or y dimension - used to calcuate system distance
+  bbox.max_dim = (bbox.dim.x > bbox.dim.y) ? bbox.dim.x: bbox.dim.y;
+
   return bbox;
 }
 
-
-outputFlavor.prototype.setupEnvironment = function(){
+//the building environment stores the state of the 
+outputFlavor.prototype.setupEnvironment = function(distance_to_wall, half_angle){
   var build_env = [];
   var bbox = this.bbox;
   var dist_to_top_layer = -1;
-  build_env.model_height = this.height*(this.is.length+1);
-  build_env.angle = this.angle; //this is the offset angle from center
-  build_env.material_size= this.diameter;
-  build_env.dim = {x: bbox.max.x - bbox.min.x, y: bbox.max.y - bbox.min.y};
-  build_env.ctr = {x: bbox.min.x + build_env.dim.x/2., y: bbox.min.y + build_env.dim.y/2.};
-  build_env.max_dim = (build_env.dim.x > build_env.dim.y) ? build_env.dim.x: build_env.dim.y;
 
+  // build_env.model_height = this.material_height*(this.is.length+1);
+  // console.log("CHECK: model_height vs. bbox.dim.z", build_env.model_height, bbox.dim.z);
 
-  if(this.distance_to_wall == -1){
+  if(distance_to_wall == -1){
     if(this.half_angle == -1) console.log("ERROR: both distance and half angle undefined");
-    var dist_to_top_layer = (build_env.max_dim/2.) / Math.tan(deg_to_rad(this.half_angle));
-    build_env.height = parseInt(dist_to_top_layer + build_env.model_height); 
-    this.distance_to_wall = build_env.height;
+    var dist_to_top_layer = (bbox.max_dim/2.) / Math.tan(deg_to_rad(half_angle));
+    build_env.distance_to_base = parseInt(dist_to_top_layer + this.bbox.dim.z); 
 
   }else{
-    build_env.height = this.distance_to_wall;
-    var opp = build_env.max_dim/2.;
-    var dist_to_top_layer = build_env.height - build_env.model_height;
+    build_env.distance_to_base = distance_to_wall;
+    var opp = bbox.max_dim/2.;
+    var dist_to_top_layer = build_env.distance_to_base - this.bbox.dim.z;
     this.half_angle = parseInt(rad_to_deg(Math.atan(opp/dist_to_top_layer)));
   }
 
@@ -141,8 +162,6 @@ outputFlavor.prototype.setupEnvironment = function(){
 outputFlavor.prototype.cleanInstructions = function(a_is){
   var instructions = [];
   var build_env = this.env;
-  var mat2 = build_env.material_size*this.diameter/4;
-
   var last = undefined;
   for(var l in a_is){
     var layer = [];
@@ -257,14 +276,11 @@ outputFlavor.prototype.createObjectFromInstructions = function(instructions) {
   // Center
   var scale = 2; // TODO: Auto size
 
-  console.log(object.position);
-
   var center = new THREE.Vector3(
     bbox.min.x + ((bbox.max.x - bbox.min.x) / 2),
     bbox.min.y + ((bbox.max.y - bbox.min.y) / 2),
     bbox.min.z + ((bbox.max.z - bbox.min.z) / 2)
     );
-    console.log("center ", center);
     object.rotation.z = Math.PI;
     object.position = center.multiplyScalar(scale);
     object.scale.multiplyScalar(scale);
@@ -379,7 +395,7 @@ outputFlavor.prototype.createPlane = function (instructions){
 outputFlavor.prototype.toMicroseconds = function(layer_id, x, y){ 
 
   var build_env = this.env;
-  var adj_height = build_env.height - (layer_id)*this.height; //height of current layer
+  var adj_height = build_env.distance_to_base - (layer_id)*this.material_height; //distance from laser to current laser (
 
 
   if(layer_id == 0 && x == 0 && y == 0){ //assume this is a starting block
@@ -387,27 +403,39 @@ outputFlavor.prototype.toMicroseconds = function(layer_id, x, y){
     y = this.bbox.min.y;
   }
 
+    var theta = {
+      x: rad_to_deg(Math.atan((x - this.bbox.ctr.x)/adj_height)) +  90,
+      y: rad_to_deg(Math.atan((y - this.bbox.ctr.y)/adj_height)) +  90.
+    };  
 
-  var theta = {
-    x: rad_to_deg(Math.atan((x - build_env.ctr.x)/adj_height)) +  90,
-    y: rad_to_deg(Math.atan((y - build_env.ctr.y)/adj_height)) +  90.
-  };  
+    var low = 90 - this.half_range;
+    var high = 90 + this.half_range;
 
-  var low = 90 - build_env.half_range;
-  var high = 90 + build_env.half_range;
+      if(theta.x > high || theta.x < low){
+      console.log("Error - theta out of range: "+theta.x );
+      console.log(this.bbox.min.x, x);
+      console.log(x, y);
+    }
 
-    if(theta.x > high || theta.x < low){
-    console.log("Error - theta out of range: "+theta.x );
-    console.log(this.bbox.min.x, x);
-    console.log(x, y);
-  }
+    var ms_per_theta = 10; //this is hardware dependent (2400 - 600 = 1800 1800/180 = 10)
 
-  var ms_per_theta = 10; //this is hardware dependent (2400 - 600 = 1800 1800/180 = 10)
+    var ms = {
+      x: parseInt(theta.x*ms_per_theta + 600),
+      y: parseInt(theta.y*ms_per_theta + 600)
+    };
 
-  var ms = {
-    x: parseInt(theta.x*ms_per_theta + 600),
-    y: parseInt(theta.y*ms_per_theta + 600)
-  };
+    if(this.angle != 0){
+      //recalculates the y values if there is an angle offset (which assumes y direction)
+      var dy = y - this.bbox.min.y;
+      var t_diff = deg_to_rad(-this.half_angle + this.angle); 
+      var y_new_min = adj_height*Math.atan(t_diff + 90) + this.bbox.ctr.y;
+      var new_y = y_new_min + dy;
+
+      theta.y = rad_to_deg(Math.tan((new_y - this.bbox.ctr.y)/adj_height));
+      theta.y = theta.y + 90;
+
+    }
+  
 
   return ms;  
 }
@@ -418,7 +446,7 @@ outputFlavor.prototype.fromMicroseconds = function(layer_id,x, y){
   var build_env = this.env;
   
   //var min_ms = (1500 - half_range*ms_per_theta) - 600;
-  var adj_height = build_env.height - (layer_id)*this.height;
+  var adj_height = build_env.distance_to_base - (layer_id)*this.material_height;
   
   var theta = {
     x: (x - 600) /ms_per_theta,
@@ -426,10 +454,18 @@ outputFlavor.prototype.fromMicroseconds = function(layer_id,x, y){
   };
 
   var coord = {
-    x: adj_height * Math.tan(deg_to_rad(theta.x - 90)) + build_env.ctr.x,
-    y: adj_height * Math.tan(deg_to_rad(theta.y - 90)) + build_env.ctr.y
+    x: adj_height * Math.tan(deg_to_rad(theta.x - 90)) + this.bbox.ctr.x,
+    y: adj_height * Math.tan(deg_to_rad(theta.y - 90)) + this.bbox.ctr.y
   }
 
+  if(this.angle != 0){
+    var dy = y - this.bbox.min.y;
+    var t_diff = deg_to_rad(-this.half_angle + this.angle); 
+    var y_new_min = adj_height*Math.atan(t_diff) + this.bbox.ctr.y;
+    var new_y = y_new_min + dy;
+    coord.y =  adj_height * Math.atan(deg_to_rad(theta.y -90)) + this.bbox.ctr.y;
+
+  }
 
   return coord;  
 }

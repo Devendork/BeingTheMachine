@@ -438,17 +438,15 @@ function createGeometryFromGCode(gcode) {
 
 
   raw_flavor = new outputFlavor(instructions, material_size, material_size, angle, true, -1, 10);
-  console.log("raw flavor test :"+raw_flavor.boundingBox());
 
 
-
-  $("#force_height").val(material_size);
-  $("#force_angle").val(angle);
-  $("#default_height").html(material_size);
+  $("#force_height").val(raw_flavor.material_height);
+  $("#force_angle").val(raw_flavor.angle);
+  $("#default_height").html(raw_flavor.material_height);
   $("#force_halfangle").val(raw_flavor.half_angle);
-  $("#force_distance").val(raw_flavor.distance_to_wall);
+  $("#force_distance").val(raw_flavor.env.distance_to_base);
 
-  select_flavor = new outputFlavor(instructions.slice(0), material_size, material_size, angle, render_raw, raw_flavor.distance_to_wall, raw_flavor.half_angle);
+  select_flavor = new outputFlavor(instructions.slice(0), material_size, material_size, angle, render_raw, raw_flavor.env.distance_to_base, raw_flavor.half_angle);
 
 }
 
@@ -583,11 +581,10 @@ function getArduinoFile(){
   
   console.log("Model Width = "+env.dim.x);
   console.log("Model Height= "+env.dim.y);
-  console.log("Dist To Base = "+env.height);
-  console.log("Material Height = "+select_flavor.height);
+  console.log("Dist To Base = "+env.distance_to_base);
+  console.log("Material Height = "+select_flavor.material_height);
   console.log("Material Diameter = "+select_flavor.diameter);
-  console.log("Model Height = "+env.model_height);
-  console.log("Model Height from BBOX = "+(select_flavor.bbox.max.z - select_flavor.bbox.min.z));
+  console.log("Model Height"+select_flavor.bbox.dim.z);
 
   lines.push("int inst_num = "+ilist.msx.length+";")
     lines.push("const PROGMEM uint8_t xs[] = {"+ilist.msx.join(",")+"};")

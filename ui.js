@@ -10,7 +10,7 @@ $('#render_raw').attr('checked', 'checked');
 $('#force_angle').change(function(evt){
   var a = $('#force_angle').val();
   console.log("force angle to "+a);
-  updateModel(select_flavor.height, a, select_flavor.distance_to_wall, select_flavor.half_angle);
+  updateModel(select_flavor.material_height, a, select_flavor.env.distance_to_base, select_flavor.half_angle);
 });
 
 
@@ -21,26 +21,26 @@ $('#force_halfangle').change(function(evt){
     $('#force_halfangle').val(a);
   }
   console.log("force half angle to "+a);
-  updateModel(select_flavor.height, select_flavor.angle, -1, a);
+  updateModel(select_flavor.material_height, select_flavor.angle, -1, a);
 
   var d = $('#force_distance').val();
   console.log("distance was "+d);
-  $('#force_distance').val(select_flavor.distance_to_wall);
+  $('#force_distance').val(select_flavor.env.distance_to_base);
   
 });
 
 $('#force_distance').change(function(evt){
   var d = $('#force_distance').val();
   console.log("force distance to "+d);
-  updateModel(select_flavor.height, select_flavor.angle, d, -1);
+  updateModel(select_flavor.material_height, select_flavor.angle, d, -1);
 
   var a = $('#force_halfangle').val();
   console.log("half angle was "+a);
 
   //make sure that the half angle is in range for the hardware
   if(a > 38){
-     updateModel(select_flavor.height, select_flavor.angle, -1, 38);
-      $('#force_distance').val(select_flavor.distance_to_wall);
+     updateModel(select_flavor.material_height, select_flavor.angle, -1, 38);
+      $('#force_distance').val(select_flavor.env.distance_to_base);
   }else{
     $('#force_halfangle').val(select_flavor.half_angle);
   }
@@ -50,35 +50,35 @@ $('#force_distance').change(function(evt){
 $('#force_height').change(function(evt){
   var h = $('#force_height').val();
   console.log("force height to "+h);
-  updateModel(h, select_flavor.angle, select_flavor.distance_to_wall, select_flavor.half_angle);
+  updateModel(h, select_flavor.angle, select_flavor.env.distance_to_base, select_flavor.half_angle);
 });
 
 $('#dimension_2d').click(function (evt){
   console.log("2d clicked");
   $('#force_height').val(0);
-  updateModel(0, select_flavor.angle, select_flavor.distance_to_wall, select_flavor.half_angle);
+  updateModel(0, select_flavor.angle, select_flavor.env.distance_to_base, select_flavor.half_angle);
 });
 
 
 $('#dimension_3d').click(function (evt){
   console.log("3d clicked");
   var h = $('#force_height').val();
-  if(h == 0) h = raw_flavor.height;
-  $('#force_height').val(h, select_flavor.angle, select_flavor.distance_to_wall, select_flavor.half_angle);
-  updateModel(h);
+  if(h == 0) h = raw_flavor.material_height;
+  $('#force_height').val(h);
+  updateModel(h, select_flavor.angle, select_flavor.env.distance_to_base, select_flavor.half_angle);
 });
 
 $('#render_raw').click(function(evt){
   console.log("render_raw");
   render_raw = true;
-  updateModel(select_flavor.height, select_flavor.angle, select_flavor.distance_to_wall, select_flavor.half_angle);
+  updateModel(select_flavor.material_height, select_flavor.angle, select_flavor.env.distance_to_base, select_flavor.half_angle);
 });
 
 
 $('#render_adjusted').click(function(evt){
   console.log("render_adjusted");
   render_raw = false;
-  updateModel(select_flavor.height, select_flavor.angle, select_flavor.distance_to_wall, select_flavor.half_angle);
+  updateModel(select_flavor.material_height, select_flavor.angle, select_flavor.env.distance_to_base, select_flavor.half_angle);
 });
 
 function updateModel(h, a, dist, ha){
@@ -89,9 +89,8 @@ function updateModel(h, a, dist, ha){
   scene2d.add(select_flavor);
   if(hasGL) scene3d.add(select_flavor.object);
 
-  var build_env = select_flavor.env;
   var m_size = Math.round(select_flavor.diameter* 100 ) / 100; 
-  var dist = Math.round(build_env.height * 100 ) / 100; 
+  var dist = Math.round(select_flavor.env.distance_to_base * 100 ) / 100; 
   $("#model_material_size").text("Material Size: "+m_size+" mm");
   $("#model_laser_distance").text("Distance from Base to Laser: "+dist+" mm");
 
@@ -143,7 +142,7 @@ function arduino(){
   var file_lines = [];
   file_lines.push("//// Values generated for "+$("#model_filename").text());
   file_lines.push("//// Material Diameter "+select_flavor.diameter); 
-  file_lines.push("//// Material Height"+select_flavor.height); 
+  file_lines.push("//// Material Height"+select_flavor.material_height); 
   var file = loadFile("Arduino/Template.ino", function(arduino){
   var lines = arduino.split('\n');
    console.log("num lines "+lines.length);
@@ -233,7 +232,7 @@ function openGCodeFromPath(path) {
     var ard_env = select_flavor.env; 
     var path_print = path.slice(path.lastIndexOf("/")+1);
     var m_size = Math.round(select_flavor.diameter * 100 ) / 100; 
-    var dist = Math.round(ard_env.height * 100 ) / 100; 
+    var dist = Math.round(ard_env.distance_to_base * 100 ) / 100; 
     $("#model_filename").text("Filename: "+path_print);
     $("#model_material_size").text("Material Size: "+m_size+" mm");
     $("#model_laser_distance").text("Distance from Base to Laser: "+dist+" mm");
@@ -259,7 +258,7 @@ function openGCodeFromText(name, gcode) {
 
     var build_env = select_flavor.env;
     var m_size = Math.round(select_flavor.diameter* 100 ) / 100; 
-    var dist = Math.round(build_env.height * 100 ) / 100; 
+    var dist = Math.round(build_env.distance_to_base * 100 ) / 100; 
     $("#model_filename").text("Filename: "+name);
     $("#model_material_size").text("Material Size: "+m_size+" mm");
     $("#model_laser_distance").text("Distance from Base to Laser: "+dist+" mm");
