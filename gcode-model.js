@@ -581,11 +581,11 @@ function getArduinoFile(){
   var lines = [];
   var ilist = createArduinoInstructions(); 
   var env = select_flavor.env;
-
+  var dist = Math.round(select_flavor.laser.z * 100 ) / 100; 
   
-  console.log("Model Width = "+env.dim.x);
-  console.log("Model Height= "+env.dim.y);
-  console.log("Dist To Base = "+env.distance_to_base);
+  console.log("Model Width = "+select_flavor.bbox.dim.x);
+  console.log("Model Height= "+select_flavor.bbox.dim.y);
+  console.log("Dist To Base = "+dist);
   console.log("Material Height = "+select_flavor.material_height);
   console.log("Material Diameter = "+select_flavor.diameter);
   console.log("Model Height"+select_flavor.bbox.dim.z);
