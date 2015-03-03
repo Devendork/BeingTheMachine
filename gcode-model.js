@@ -44,11 +44,9 @@ function createGeometryFromGCode(gcode) {
     var dy = delta(p2.y, p1.y);
     var dz = delta(p1.z, p2.z);
     var move_distance = Math.sqrt(dx*dx + dy*dy + dz*dz);
-
-    if(dz > 0){
+    if(dz > 0){          
         dz = Math.round(dz * 10)/10;
-        if(layer_heights[dz] == undefined) layer_heights[dz] = 0;
-        layer_heights[dz]++;
+        layer_heights.push(dz);
     }
 
     var obj = {
@@ -409,23 +407,25 @@ function createGeometryFromGCode(gcode) {
   var material_size = 0;
   var angle = 0;
 
-  if(layer_heights.length > 1){ 
-    for(var i in layer_heights){
-      count++;
-      if(layer_heights[i] > most){
-        most = layer_heights[i];
-        material_size = i;
-      }
-    }
-  }else{
-    material_size = layer_heights[0];
-  }
+  material_size = layer_heights.pop();
+
+
+  // if(layer_heights.length > 0){ 
+  //   for(var i in layer_heights){
+  //     count++;
+  //     console.log(i, layer_heights[i]);
+  //     if(layer_heights[i] > most){
+  //       most = layer_heights[i];
+  //       material_size = i;
+  //     }
+  //   }
+  // }
   
 
 
   if(count > 1) 
       console.log("ERROR: Multiple Layer Heights Detected, Using Most Common For Printing");
-  console.log("Material size is "+material_size);
+      console.log("Material size is "+material_size);
 
 
  for(var l in instructions){
@@ -437,16 +437,17 @@ function createGeometryFromGCode(gcode) {
 
 
 
-  raw_flavor = new outputFlavor(instructions, material_size, material_size, angle, true, -1, 10);
+  raw_flavor = new outputFlavor(instructions, material_size, material_size, angle, true, -1, 10, -1, -1);
 
 
   $("#force_height").val(raw_flavor.material_height);
-  $("#force_angle").val(raw_flavor.angle);
+  $("#force_angle").val(raw_flavor.laser_to_center);
   $("#default_height").html(raw_flavor.material_height);
   $("#force_halfangle").val(raw_flavor.half_angle);
-  $("#force_distance").val(raw_flavor.env.distance_to_base);
-
-  select_flavor = new outputFlavor(instructions.slice(0), material_size, material_size, angle, render_raw, raw_flavor.env.distance_to_base, raw_flavor.half_angle);
+  $("#force_distance").val(raw_flavor.laser.z);
+  $("#layer_min").val(0);
+  $("#layer_max").val(raw_flavor.is.length);
+  select_flavor = new outputFlavor(instructions.slice(0), material_size, material_size, angle, render_raw, raw_flavor.laser.z, raw_flavor.half_angle, 0, raw_flavor.is.length);
 
 }
 
@@ -493,10 +494,13 @@ function getSDInstructions(){
   var raw_x;
   var raw_y;
 
+  console.log("bounding box");
+    console.log(bx);
   for(var i in bx){
-    var ms  = select_flavor.toMicroseconds(0, bx[i], by[i]);
+    var ms  = select_flavor.toMicroseconds(0, bx[i], by[i], flavor.bbox.max.z);
     bx[i] = ms.x;
     by[i] = ms.y;
+    console.log(ms);
   }
 
   ilist.push("x"+bx.join());
@@ -507,21 +511,20 @@ function getSDInstructions(){
 
   //go through and make the instructions
   for(var l in flavor.a_is){
-      console.log(l);
-    for(var i in flavor.a_is[l]){
-      var inst = flavor.a_is[l][i];
-        
-        raw_x = inst.obj.microseconds.x;
-        raw_y = inst.obj.microseconds.y;
+      for(var i in flavor.a_is[l]){
+        var inst = flavor.a_is[l][i];
+          
+          raw_x = inst.obj.microseconds.x;
+          raw_y = inst.obj.microseconds.y;
 
-        
-        if(last.ext == true) ilist.push("g"+i_count+","+raw_x+","+raw_y);
-        else ilist.push("p"+i_count+","+raw_x+","+raw_y);
-        
-        last.ext = inst.ext; 
-        i_count++;
-    }
-    layer_count++;
+          
+          if(last.ext == true) ilist.push("g"+i_count+","+raw_x+","+raw_y);
+          else ilist.push("p"+i_count+","+raw_x+","+raw_y);
+          
+          last.ext = inst.ext; 
+          i_count++;
+        }
+      layer_count++;
     ilist.push("l"+layer_count+","+raw_x+","+raw_y);
   }
    return ilist;

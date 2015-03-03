@@ -1,27 +1,85 @@
 //a new output flavor is created everytime an option changes in the options panel
-function outputFlavor(instructions, diameter, height, angle, raw, distance_to_wall, half_angle){
+function outputFlavor(instructions, diameter, height, laser_to_center, raw, distance_to_wall, half_angle, min, max){
     //MODEL PARAMS
-    this.is = instructions;                     //raw instrutions
     this.a_is = [];                              //arduino instructions
     this.bbox = [];                             //this will store the bounding box of the model
+    this.range = {min: min, max: max};
+    console.log(this.range);
+    var layer_id = 0;
+
+    //this.is = instructions;                     //raw instrutions
+    this.is = [];                     //raw instrutions
+    for(var l in instructions){
+      if((l >= this.range.min && l <= this.range.max) || (min == -1 && max == -1)){
+        this.is[layer_id] = [];
+        inst_id = 0;
+        for(var i in instructions[l]){
+            this.is[layer_id].push(instructions[l][i]);
+        }
+        layer_id++;
+      }
+    }
+
+
+   // //go through and delete instructions
+    // for(var i = 0;  i < 1869; i++){
+    //   this.is[6].pop();
+    // }
+
+    //  for(var i = 0;  i < 1243; i++){
+    //   this.is[8].pop();
+    // }
+
+    //     for(var i = 0;  i < 367; i++){
+    //   this.is[12].pop();
+    //}
+    // //go through and delete instructions
+    // for(var i = 0;  i < 1535; i++){
+    //   this.is[8].pop();
+    // }
+
+    // for(var i = 0;  i < 1538; i++){
+    //   this.is[10].pop();
+    // }
+
+
+    // for(var i = 0;  i < 488; i++){
+    //   this.is[16].pop();
+    // }
 
     //MATERIAL PARAMS
     this.diameter = diameter;                   // material diameter
     this.material_height = height;              // material height
 
     //HARDWARE PARAMS
-    this.angle = angle;                         // tilt of the system off the y-axis
+    this.laser_to_center = parseInt(laser_to_center);                         // tilt of the system off the y-axis
     this.half_angle = half_angle;               // half of the full range of the system (wider range = shorter distance to wall)
-    
-    //ENVIRONMENT PARAMS
-    this.env = [];
-    
-    //order matters here
-    this.updateInstructionHeight(this.is, this.material_height);  //updates based on material_height
-    this.bbox = this.boundingBox();    
-    this.env = this.setupEnvironment(distance_to_wall, half_angle); 
    
-    this.updateInstructionOffsetAngle(this.is, this.angle, this.material_height); //updates y on offset    
+
+    this.updateInstructionHeights();            //updates instructions based on material height
+ 
+    //ENVIRONMENT PARAMS
+    this.bbox = this.boundingBox();  
+    this.laser = {
+      x: this.bbox.ctr.x,
+      y: this.bbox.ctr.y
+    };
+
+    if(distance_to_wall == -1){
+      if(this.half_angle == -1) console.log("ERROR: both distance and half angle undefined");
+      var dist_to_top_layer = (this.bbox.max_dim/2.) / Math.tan(deg_to_rad(this.half_angle));
+      this.laser.z = parseInt(dist_to_top_layer + this.bbox.dim.z); 
+
+    }else{
+      this.laser.z = distance_to_wall;
+      var opp = this.bbox.max_dim/2.;
+      var dist_to_top_layer = this.laser.z - this.bbox.dim.z;
+      this.half_angle = parseInt(rad_to_deg(Math.atan(opp/dist_to_top_layer)));
+    }
+
+
+
+    this.updateInstructionOffsets();
 
     this.a_is = this.arduinoInstructions();     //store instructions as arduino sees them
     if(!raw) this.is = this.a_is.slice(0);      //if we want to display arduino instructions, copy the array and store as instrucitons
@@ -29,7 +87,7 @@ function outputFlavor(instructions, diameter, height, angle, raw, distance_to_wa
     //RENDER PARAMS
     this.object = this.createObjectFromInstructions(this.is);
     this.plane = this.createPlane(this.is);
-
+    this.createLaser(this.laser);
     console.log("NEW FLAVOR CREATED");
     console.log(this);
 }
@@ -38,61 +96,74 @@ outputFlavor.prototype.is = [];
 outputFlavor.prototype.diameter= 0;
 outputFlavor.prototype.material_height = 0;
 outputFlavor.prototype.half_angle = 10;
-//outputFlavor.prototype.distance_to_wall = 0;
-outputFlavor.prototype.angle = 0;//added 1-5-15
+outputFlavor.prototype.laser_to_center = 0;//added 1-5-15
 outputFlavor.prototype.bbox = undefined;
-outputFlavor.prototype.env = undefined;
+outputFlavor.prototype.laser = undefined;
 outputFlavor.prototype.plane = undefined;
 outputFlavor.prototype.object = undefined;
 outputFlavor.prototype.a_is = undefined;
+outputFlavor.prototype.range = undefined;
 
 
 
-
-outputFlavor.prototype.updateInstructionOffsetAngle = function(is, angle){
-  if(angle == 0) return;
-  var adj_height  = -1;
-  var t_diff = deg_to_rad(-this.half_angle + this.angle); 
-  console.log(this.half_angle, this.angle, (-this.half_angle + this.angle));
-  console.log("t_diff", t_diff);
+// outputFlavor.prototype.updateInstructionAngle = function(){
+//   if(this.laser_to_center == 0) return;
+//   var t_diff = deg_to_rad(-this.half_angle + this.angle); 
   
-  for(var l in is){
-    for(var i in is[l]){
-      inst = is[l][i];
+//   for(var l in this.is){
+//     for(var i in this.is[l]){
+//       inst = this.is[l][i];
+//       var adj_height = this.env.distance_to_base - inst.coord.z;
+//       var dy = inst.coord.y - this.bbox.min.y;
+//       var y_new_min = adj_height*Math.atan(t_diff) + this.bbox.ctr.y;
+//       var new_y = y_new_min + dy;
+//       this.is[l][i].coord.y = new_y;
+//     }
+//   }
+   
+//   var oldbbox = this.bbox;
+//   this.bbox = this.boundingBox();             
+//   this.env = this.setupEnvironment(this.env.distance_to_base, this.half_angle); 
+//   console.log("bbox offset", oldbbox.min.y - this.bbox.min.y);
 
-      if(l == 0 && inst.coord.x == 0 && inst.coord.y == 0){ //assume this is a starting block
-        x = this.bbox.min.x;
-        y = this.bbox.min.y;
-      }
 
-      adj_height= this.env.distance_to_base - inst.coord.z; //distance from laser to current laser 
-     
-      var dy = inst.coord.y - this.bbox.min.y; 
-      console.log("dy",inst.coord.y,this.bbox.min.y, dy);
 
-      console.log(Math.atan(t_diff), adj_height, this.bbox.ctr.y);
-      var y_new_min = adj_height*Math.atan(t_diff) + this.bbox.ctr.y;
-      console.log(y_new_min);
+// }
 
-      var new_y = y_new_min + dy;
-      console.log("y old / new", inst.coord.y, new_y);
-      inst.coord.y = new_y;
+
+//If I'm not mistaken this will just run once everytime an option is changed  
+outputFlavor.prototype.updateInstructionHeights = function(){
+  console.log("Update heights to :", this.material_height);
+  for(var l in this.is){
+    for(var i in this.is[l]){
+      inst = this.is[l][i];
+      inst.coord.z = l * this.material_height;
     }
   }
-
-  this.bbox = this.boundingBox(); 
-  this.env = this.setupEnvironment(distance_to_wall, half_angle); 
-
 } 
 
-
-outputFlavor.prototype.updateInstructionHeight = function(is, material_height){
-  for(var l in is){
-    for(var i in is[l]){
-      inst = is[l][i];
-      inst.coord.z = l * material_height;
+//If I'm not mistaken this will just run once everytime an option is changed  
+outputFlavor.prototype.updateInstructionOffsets = function(){
+  if(this.laser_to_center == 0) return;
+  for(var l in this.is){
+    for(var i in this.is[l]){
+      inst = this.is[l][i];
+      inst.coord.y += this.laser_to_center; //+ moves down
     }
   }
+
+  this.bbox.min.y += this.laser_to_center;
+  this.bbox.max.y += this.laser_to_center;
+  this.bbox.ctr.y += this.laser_to_center;
+
+  var adj_height = this.laser.z - this.bbox.max.z;
+  var theta = {
+      min: rad_to_deg(Math.atan((this.bbox.min.y - this.laser.y)/adj_height)) +  90,
+      max: rad_to_deg(Math.atan((this.bbox.max.y - this.laser.y)/adj_height)) +  90.
+    };  
+
+  console.log(theta);
+
 } 
 
 
@@ -116,9 +187,10 @@ outputFlavor.prototype.arduinoInstructions = function(){
             obj: inst.obj
           };
         
-          inst.obj.microseconds = this.toMicroseconds(l, inst.coord.x, inst.coord.y);
+          inst.obj.microseconds = this.toMicroseconds(l, inst.coord.x, inst.coord.y, inst.coord.z);
           ai.coord = this.fromMicroseconds(l, inst.obj.microseconds.x, inst.obj.microseconds.y);
           ai.coord.z = l * this.material_height;
+
           a_is[l].push(ai);
          }
       }
@@ -171,34 +243,10 @@ outputFlavor.prototype.boundingBox = function(){
   return bbox;
 }
 
-//the building environment stores the state of the 
-outputFlavor.prototype.setupEnvironment = function(distance_to_wall, half_angle){
-  var build_env = [];
-  var bbox = this.bbox;
-  var dist_to_top_layer = -1;
-
-  // build_env.model_height = this.material_height*(this.is.length+1);
-  // console.log("CHECK: model_height vs. bbox.dim.z", build_env.model_height, bbox.dim.z);
-
-  if(distance_to_wall == -1){
-    if(this.half_angle == -1) console.log("ERROR: both distance and half angle undefined");
-    var dist_to_top_layer = (bbox.max_dim/2.) / Math.tan(deg_to_rad(half_angle));
-    build_env.distance_to_base = parseInt(dist_to_top_layer + this.bbox.dim.z); 
-
-  }else{
-    build_env.distance_to_base = distance_to_wall;
-    var opp = bbox.max_dim/2.;
-    var dist_to_top_layer = build_env.distance_to_base - this.bbox.dim.z;
-    this.half_angle = parseInt(rad_to_deg(Math.atan(opp/dist_to_top_layer)));
-  }
-
-  return build_env;
-}
 
 
 outputFlavor.prototype.cleanInstructions = function(a_is){
   var instructions = [];
-  var build_env = this.env;
   var last = undefined;
   for(var l in a_is){
     var layer = [];
@@ -325,6 +373,20 @@ outputFlavor.prototype.createObjectFromInstructions = function(instructions) {
     return object;
 }
 
+outputFlavor.prototype.createLaser = function(laser){
+  console.log("laser");
+  var geometry = new THREE.BoxGeometry( 10, 10, 10 );
+  var material = new THREE.MeshBasicMaterial( {color: "#FF5B66", side: THREE.DoubleSide} );
+  var cube = new THREE.Mesh( geometry, material );
+    var laser_pos = new THREE.Vector3(
+      laser.x,
+      laser.y, 
+      -laser.z);
+  cube.position = laser_pos;
+  this.object.add(cube); 
+
+}
+
 outputFlavor.prototype.createPlane = function (instructions){
   var z;
   var bbox = this.bbox;
@@ -429,10 +491,10 @@ outputFlavor.prototype.createPlane = function (instructions){
 
 
 //updated 1-10 - no longer adjusting parameters to the size of a byte
-outputFlavor.prototype.toMicroseconds = function(layer_id, x, y){ 
+outputFlavor.prototype.toMicroseconds = function(layer_id, x, y, z){ 
 
-  var build_env = this.env;
-  var adj_height = build_env.distance_to_base - (layer_id)*this.material_height; //distance from laser to current laser (
+  //var adj_height = build_env.distance_to_base - (layer_id)*this.material_height; //distance from laser to current laser (
+  var adj_height = this.laser.z - z; //distance from laser to current laser (
 
 
   if(layer_id == 0 && x == 0 && y == 0){ //assume this is a starting block
@@ -441,32 +503,17 @@ outputFlavor.prototype.toMicroseconds = function(layer_id, x, y){
   }
 
     var theta = {
-      x: rad_to_deg(Math.atan((x - this.bbox.ctr.x)/adj_height)) +  90,
-      y: rad_to_deg(Math.atan((y - this.bbox.ctr.y)/adj_height)) +  90.
+      x: rad_to_deg(Math.atan((x - this.laser.x)/adj_height)) +  90,
+      y: rad_to_deg(Math.atan((y - this.laser.y)/adj_height)) +  90.
     };  
 
-    var low = 90 - this.half_range;
-    var high = 90 + this.half_range;
+    var low = 90 - 35;
+    var high = 90 + 35;
 
       if(theta.x > high || theta.x < low){
-      console.log("Error - theta out of range: "+theta.x );
-      console.log(this.bbox.min.x, x);
+      console.log("Error - theta out of max range: "+theta.x );
       console.log(x, y);
     }
-
-    // if(this.angle != 0){
-    //   //recalculates the y values if there is an angle offset (which assumes y direction)
-    //   var dy = y - this.bbox.min.y;
-    //   var t_diff = deg_to_rad(-this.half_angle + this.angle); 
-    //   var y_new_min = adj_height*Math.atan(t_diff + 90) + this.bbox.ctr.y;
-    //   var new_y = y_new_min + dy;
-    //   console.log("y old", theta.y);
-    //   theta.y = rad_to_deg(Math.tan((new_y - this.bbox.ctr.y)/adj_height));
-    //   theta.y = theta.y + 90;
-    //   console.log("y new", theta.y);
-
-
-    // }
 
     var ms_per_theta = 10; //this is hardware dependent (2400 - 600 = 1800 1800/180 = 10)
 
@@ -474,7 +521,6 @@ outputFlavor.prototype.toMicroseconds = function(layer_id, x, y){
       x: parseInt(theta.x*ms_per_theta + 600),
       y: parseInt(theta.y*ms_per_theta + 600)
     };
-
   
 
   return ms;  
@@ -483,10 +529,9 @@ outputFlavor.prototype.toMicroseconds = function(layer_id, x, y){
 //to do figure out why microseconds isn't writing the full range
 outputFlavor.prototype.fromMicroseconds = function(layer_id,x, y){ 
   var ms_per_theta = 10; //this is hardware dependent (2400 - 600 = 1800 1800/180 = 10)
-  var build_env = this.env;
   
   //var min_ms = (1500 - half_range*ms_per_theta) - 600;
-  var adj_height = build_env.distance_to_base - (layer_id)*this.material_height;
+  var adj_height = this.laser.z - (layer_id)*this.material_height;
   
   var theta = {
     x: (x - 600) /ms_per_theta,
@@ -494,18 +539,9 @@ outputFlavor.prototype.fromMicroseconds = function(layer_id,x, y){
   };
 
   var coord = {
-    x: adj_height * Math.tan(deg_to_rad(theta.x - 90)) + this.bbox.ctr.x,
-    y: adj_height * Math.tan(deg_to_rad(theta.y - 90)) + this.bbox.ctr.y
+    x: adj_height * Math.tan(deg_to_rad(theta.x - 90)) + this.laser.x,
+    y: adj_height * Math.tan(deg_to_rad(theta.y - 90)) + this.laser.y
   }
-
-  // if(this.angle != 0){
-  //   var dy = y - this.bbox.min.y;
-  //   var t_diff = deg_to_rad(-this.half_angle + this.angle); 
-  //   var y_new_min = adj_height*Math.atan(t_diff) + this.bbox.ctr.y;
-  //   var new_y = y_new_min + dy;
-  //   coord.y =  adj_height * Math.atan(deg_to_rad(theta.y -90)) + this.bbox.ctr.y;
-
-  // }
 
   return coord;  
 }

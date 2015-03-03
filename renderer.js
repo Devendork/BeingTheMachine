@@ -6,7 +6,7 @@ function Scene2D(element){
 	this.step = 0;
 	this.scale = 1; 
 	this.ebbox = undefined;
-  this.w = element.width();
+  	this.w = element.width();
 	this.h = element.height();
 	this.instructions = [];
 	this.draw = SVG('renderArea2d');
