@@ -18,9 +18,10 @@ function outputFlavor(instructions, diameter, height, angle, raw, distance_to_wa
     
     //order matters here
     this.updateInstructionHeight(this.is, this.material_height);  //updates based on material_height
-    this.bbox = this.boundingBox();             
+    this.bbox = this.boundingBox();    
     this.env = this.setupEnvironment(distance_to_wall, half_angle); 
-    
+   
+    this.updateInstructionOffsetAngle(this.is, this.angle, this.material_height); //updates y on offset    
 
     this.a_is = this.arduinoInstructions();     //store instructions as arduino sees them
     if(!raw) this.is = this.a_is.slice(0);      //if we want to display arduino instructions, copy the array and store as instrucitons
@@ -48,7 +49,43 @@ outputFlavor.prototype.a_is = undefined;
 
 
 
-//If I'm not mistaken this will just run once everytime an option is changed  
+outputFlavor.prototype.updateInstructionOffsetAngle = function(is, angle){
+  if(angle == 0) return;
+  var adj_height  = -1;
+  var t_diff = deg_to_rad(-this.half_angle + this.angle); 
+  console.log(this.half_angle, this.angle, (-this.half_angle + this.angle));
+  console.log("t_diff", t_diff);
+  
+  for(var l in is){
+    for(var i in is[l]){
+      inst = is[l][i];
+
+      if(l == 0 && inst.coord.x == 0 && inst.coord.y == 0){ //assume this is a starting block
+        x = this.bbox.min.x;
+        y = this.bbox.min.y;
+      }
+
+      adj_height= this.env.distance_to_base - inst.coord.z; //distance from laser to current laser 
+     
+      var dy = inst.coord.y - this.bbox.min.y; 
+      console.log("dy",inst.coord.y,this.bbox.min.y, dy);
+
+      console.log(Math.atan(t_diff), adj_height, this.bbox.ctr.y);
+      var y_new_min = adj_height*Math.atan(t_diff) + this.bbox.ctr.y;
+      console.log(y_new_min);
+
+      var new_y = y_new_min + dy;
+      console.log("y old / new", inst.coord.y, new_y);
+      inst.coord.y = new_y;
+    }
+  }
+
+  this.bbox = this.boundingBox(); 
+  this.env = this.setupEnvironment(distance_to_wall, half_angle); 
+
+} 
+
+
 outputFlavor.prototype.updateInstructionHeight = function(is, material_height){
   for(var l in is){
     for(var i in is[l]){
@@ -417,6 +454,20 @@ outputFlavor.prototype.toMicroseconds = function(layer_id, x, y){
       console.log(x, y);
     }
 
+    // if(this.angle != 0){
+    //   //recalculates the y values if there is an angle offset (which assumes y direction)
+    //   var dy = y - this.bbox.min.y;
+    //   var t_diff = deg_to_rad(-this.half_angle + this.angle); 
+    //   var y_new_min = adj_height*Math.atan(t_diff + 90) + this.bbox.ctr.y;
+    //   var new_y = y_new_min + dy;
+    //   console.log("y old", theta.y);
+    //   theta.y = rad_to_deg(Math.tan((new_y - this.bbox.ctr.y)/adj_height));
+    //   theta.y = theta.y + 90;
+    //   console.log("y new", theta.y);
+
+
+    // }
+
     var ms_per_theta = 10; //this is hardware dependent (2400 - 600 = 1800 1800/180 = 10)
 
     var ms = {
@@ -424,17 +475,6 @@ outputFlavor.prototype.toMicroseconds = function(layer_id, x, y){
       y: parseInt(theta.y*ms_per_theta + 600)
     };
 
-    if(this.angle != 0){
-      //recalculates the y values if there is an angle offset (which assumes y direction)
-      var dy = y - this.bbox.min.y;
-      var t_diff = deg_to_rad(-this.half_angle + this.angle); 
-      var y_new_min = adj_height*Math.atan(t_diff + 90) + this.bbox.ctr.y;
-      var new_y = y_new_min + dy;
-
-      theta.y = rad_to_deg(Math.tan((new_y - this.bbox.ctr.y)/adj_height));
-      theta.y = theta.y + 90;
-
-    }
   
 
   return ms;  
@@ -458,14 +498,14 @@ outputFlavor.prototype.fromMicroseconds = function(layer_id,x, y){
     y: adj_height * Math.tan(deg_to_rad(theta.y - 90)) + this.bbox.ctr.y
   }
 
-  if(this.angle != 0){
-    var dy = y - this.bbox.min.y;
-    var t_diff = deg_to_rad(-this.half_angle + this.angle); 
-    var y_new_min = adj_height*Math.atan(t_diff) + this.bbox.ctr.y;
-    var new_y = y_new_min + dy;
-    coord.y =  adj_height * Math.atan(deg_to_rad(theta.y -90)) + this.bbox.ctr.y;
+  // if(this.angle != 0){
+  //   var dy = y - this.bbox.min.y;
+  //   var t_diff = deg_to_rad(-this.half_angle + this.angle); 
+  //   var y_new_min = adj_height*Math.atan(t_diff) + this.bbox.ctr.y;
+  //   var new_y = y_new_min + dy;
+  //   coord.y =  adj_height * Math.atan(deg_to_rad(theta.y -90)) + this.bbox.ctr.y;
 
-  }
+  // }
 
   return coord;  
 }

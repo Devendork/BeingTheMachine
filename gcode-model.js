@@ -507,6 +507,7 @@ function getSDInstructions(){
 
   //go through and make the instructions
   for(var l in flavor.a_is){
+      console.log(l);
     for(var i in flavor.a_is[l]){
       var inst = flavor.a_is[l][i];
         

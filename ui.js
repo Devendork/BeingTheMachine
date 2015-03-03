@@ -8,7 +8,7 @@ $('#render_raw').attr('checked', 'checked');
 
 
 $('#force_angle').change(function(evt){
-  var a = $('#force_angle').val();
+  var a = parseInt($('#force_angle').val());
   console.log("force angle to "+a);
   updateModel(select_flavor.material_height, a, select_flavor.env.distance_to_base, select_flavor.half_angle);
 });
