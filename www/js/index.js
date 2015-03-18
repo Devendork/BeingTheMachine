@@ -17,11 +17,11 @@
  * under the License.
  */
 
+
+
 var module = angular.module('app', ['onsen']); 
 var hasGL = undefined;
 var render_raw = true;
-var scene2d = null;
-var scene3d = null;
 
 var app = {
     //global bluetooth vars
@@ -32,6 +32,7 @@ var app = {
 
     // Application Constructor
     initialize: function() {
+        console.log("init app");
         this.bindEvents();
     },
     // Bind Event Listeners
@@ -46,147 +47,35 @@ var app = {
     },
 
     initUI:function(){
-        hasGL = Detector.webgl;
-        console.log("init ui ", hasGL);
 
-        $('#renderArea3d').hide();
-        $('#square').hide();
-        $('#bluetooth_alert').hide();
-        $('#file_alert').hide();
-        //$('.bluetooth').hide();
+        app.hasGL = Detector.webgl;
+        ui.init();        
 
+        function loadFile(){
+            app.lastImported = localStorage.getItem('last-imported');
+            app.lastLoaded = localStorage.getItem('last-loaded');
+            app.lastFilename = localStorage.getItem('last-filename');
 
-        if(!hasGL){
-            var element = document.getElementById("renderArea3d"); 
-            element.style.fontFamily = 'monospace';
-            element.style.fontSize = '13px';
-            element.style.fontWeight = 'normal';
-            element.style.textAlign = 'center';
-            element.style.background = '#fff';
-            element.style.color = '#F00';
-            element.style.padding = '1.5em';
-            element.style.width = '400px';
-            element.style.margin = '5em auto 0';
-            element.innerHTML = window.WebGLRenderingContext ? [
-             'Your graphics card does not seem to support <a href="http://khronos.org/webgl/wiki/Getting_a_WebGL_Implementation" style="color:#000">WebGL</a>.<br />',
-             'Find out how to get it <a href="http://get.webgl.org/" style="color:#000">here</a>.'
-         ].join( '\n' ) : [
-             'Your browser does not seem to support <a href="http://khronos.org/webgl/wiki/Getting_a_WebGL_Implementation" style="color:#000">WebGL</a>.<br/>',
-             'Find out how to get it <a href="http://get.webgl.org/" style="color:#000">here</a>.'
-         ].join( '\n' );
-        }
-
-
-
-        scene2d = new Scene2D($('#renderArea2d'));
-        if(hasGL) scene3d = create3DScene($('#renderArea3d'));
-
-        var lastImported = localStorage.getItem('last-imported');
-        var lastLoaded = localStorage.getItem('last-loaded');
-        var lastFilename = localStorage.getItem('last-filename');
-
-        if (lastImported) {
-            openGCodeFromText(lastFilename, lastImported);
-        } else {
-            openGCodeFromPath(lastLoaded || 'gcode/hand.gcode');
-        }
-
-        if(hasGL){ 
-            update3DScene();
-            controls.enabled = false;
-        }
-        app.menu.setSwipeable(false);
-
-        $("#layerRange").change(function(){
-          var i =  $("#layerRange").prop('value');
-          var showValue = +i+1;
-          scene2d.loadLayer(i); 
-          $("#instRange").prop('max', scene2d.instructions[i].length);
-          $("#instRange").prop('value', 0);
-          
-        });
-
-        $("#instRange").change(function(){
-        var i =  $("#instRange").prop('value');
-          while(scene2d.step < i){
-            scene2d.nextStep();
-          }
-
-          while(scene2d.step > i){
-            scene2d.prevStep();
-          }
-        });
-
-        //figure out how to use touch start /end for equivalent
-        var interval;
-        $("#increment").mousedown(function() {
-            interval = setInterval(function(){
-              scene2d.nextStep();
-              app.sendData("next");
-            }, 100);
-        }).mouseup(function() {
-            clearInterval(interval);  
-        })
-        
-
-        $("#decrement").mousedown(function() {
-            interval = setInterval(function(){
-              scene2d.prevStep();
-              app.sendData("prev");
-            }, 100);
-        }).mouseup(function() {
-            clearInterval(interval);  
-        });
-        
-        // $("#increment").click(function(){
-        //   scene2d.nextStep();
-        //   app.sendData("next");
-
-        // });
-
-        $("#connect").click(function(){
-            app.menu.toggle();
-            app.listPorts();
-            // var temp = [];
-            // temp.push({name:"BTM_BT1",address: "00:00:01"});
-            // temp.push({name:"BTM_BT2",address: "00:00:02"});
-            // app.selectConnection(temp);
-        });
-
-        $("#bt_select").click(function(){
-            app.serial("establishing connection");
-            //write to mac address
-            app.manageConnection();
-        });
-
-        $("#bt_close_select").click(function(){
-              app.serial("removing connection");
-              $("#bluetooth_alert").hide();
-        });
-
-
-         
-        $("#toggleView").click(function(){
-            if (app.view == "3d") {
-                console.log("toggle2d");
-                app.view = "2d";
-                $("#renderArea3d").css('display','none');
-                $("#renderArea2d").css('display','block');
-                $("#cube").show();
-                $("#square").hide();
-                if(hasGL) controls.enabled = false;
-
-
-            }else {
-                console.log("toggle3d");
-                app.view = "3d"
-                $("#renderArea2d").css('display','none');
-                $("#renderArea3d").css('display','block');
-                $("#cube").hide();
-                $("#square").show();
-                if(hasGL) controls.enabled = true;
+            if (app.lastImported) {
+                app.openGCodeFromText(app.lastFilename, app.lastImported);
+            } else {
+                app.openGCodeFromPath(app.lastLoaded || 'gcode/hand.gcode');
             }
-        });
+        }
+
+        loadFile();
+
+        //make sure to set up the graphics after the file has been loaded
+        d2.init(ui.div_2d);
+        d2.add(select_flavor);
+
+        d3.init(ui.div_3d);
+        d3.add(select_flavor.object);
+
+        d3.setControls(false);
+
+         if(!app.hasGL) ui.glError();
+
     },
 
 
@@ -196,28 +85,26 @@ var app = {
     // function, we must explicitly call 'app.receivedEvent(...);'
     onDeviceReady: function() {
         app.has_bt = true;
-        console.log("device ready");
-        $('.bluetooth').show();
         app.listPorts();
 
-        var interval;
-        var triggerNext = function(){
-             interval = setInterval(function(){
-              scene2d.nextStep();
-              app.sendData("next");
-            }, 100);        
-        };
+        // var interval;
+        // var triggerNext = function(){
+        //      interval = setInterval(function(){
+        //       d2.nextStep();
+        //       app.sendData("next");
+        //     }, 100);        
+        // };
 
-         var triggerLast = function(){
-             interval = setInterval(function(){
-            scene2d.prevStep();
-              app.sendData("next");
-            }, 100);        
-        };
+        //  var triggerLast = function(){
+        //      interval = setInterval(function(){
+        //      d2.prevStep();
+        //      app.sendData("next");
+        //     }, 100);        
+        // };
 
-        var endInterval = function(){
-            clearInterval(interval);  
-        };
+        // var endInterval = function(){
+        //     clearInterval(interval);  
+        // };
 
         // document.getElementById("#increment").addEventListener('touchstart', triggerNext, false);
         // document.getElementById("#increment").addEventListener('touchend', endInterval, false);
@@ -228,22 +115,24 @@ var app = {
         
     },
 
+    ////////////////// BLUETOOTH FUNCTIONS //////////////////////
+
     listPorts: function(){
         //app.receivedEvent('deviceready');
         var listPorts = function(){
             bluetoothSerial.list(
                 function(results){
-                    app.serial(JSON.stringify(results));
-                    app.selectConnection(results);
+                    ui.serial(JSON.stringify(results));
+                    ui.bluetoothAlert(results);
                 },
                 function(error){
-                    app.serial(JSON.stringify(error));
+                    ui.serial(JSON.stringify(error));
                 }
             );
         }
 
         var notEnabled = function(){
-            app.serial("Bluetooth is not enabled");
+            ui.serial("Bluetooth is not enabled");
         }
 
         bluetoothSerial.isEnabled(
@@ -252,75 +141,14 @@ var app = {
         );
 
     },
-    // Update DOM on a Received Event
-    // receivedEvent: function(id) {
-    //     var parentElement = document.getElementById(id);
-    //     var listeningElement = parentElement.querySelector('.listening');
-    //     var receivedElement = parentElement.querySelector('.received');
 
-    //     listeningElement.setAttribute('style', 'display:none;');
-    //     receivedElement.setAttribute('style', 'display:block;');
-
-    //     console.log('Received Event: ' + id);
-    // },
-
-    // selectFile:function(){
-    //     $(".file_select").remove(); //clear the list
-        
-    //     for(var i in list){
-    //         $('#file_menu').prepend($('<button></button>')
-    //             .addClass("alert-dialog-button")
-    //             .addClass("bt_file")
-    //             .prop("value", list[i].address)
-    //             .text(list[i].name)
-    //         );
-            
-    //     }
-
-    //     $(".bt_select").click(function(){
-    //         app.macAddress = $(this).prop('value');
-    //         $("#bluetooth_alert").hide();
-    //         app.menu.toggle();
-    //         manageConnection();
-    //     });
-
-    //     $('#bluetooth_alert').show();
-
-    // },
-
-    selectConnection:function(list){
-        app.serial("open box");
-
-        $(".bt_select").remove(); //clear the list
-        
-        for(var i in list){
-            $('#bt_menu').prepend($('<button></button>')
-                .addClass("alert-dialog-button")
-                .addClass("bt_select")
-                .prop("value", list[i].address)
-                .text(list[i].name)
-            );
-            
-        }
-
-        $(".bt_select").click(function(){
-            app.serial("selected");
-            app.macAddress = $(this).prop('value');
-            $("#bluetooth_alert").hide();
-            app.menu.toggle();
-            app.manageConnection();
-        });
-
-        $('#bluetooth_alert').show();
-
-    },
 
     manageConnection: function(){
-        app.serial("manage connection");
+        ui.serial("manage connection");
 
         var connect = function(){
-            app.clearSerial();
-            app.serial("attempting to connect. " +
+            ui.clearSerial();
+            ui.serial("attempting to connect. " +
                     "make sure the serial port is open on the target device");
 
             bluetoothSerial.connect(
@@ -331,7 +159,7 @@ var app = {
         };
 
         var disconnect = function(){
-            app.serial("attemtping to disconnect");
+            ui.serial("attemtping to disconnect");
             bluetoothSerial.disconnect(
                 app.closePort,
                 app.showError
@@ -343,13 +171,13 @@ var app = {
 
 
     openPort:function(){
-        app.serial("Connected to: "+app.macAddress);
+        ui.serial("Connected to: "+app.macAddress);
         bluetoothSerial.subscribe('\n', app.onData, app.showError);
     },
 
     onData:function(data){
         $
-        app.serial(data);
+        ui.serial(data);
     },
 
     sendData: function(data) { // send data to Arduino
@@ -357,7 +185,7 @@ var app = {
 
         var success = function() {
             console.log("success");
-            app.serial("S: " + data);
+            ui.serial("S: " + data);
         };
 
         var failure = function() {
@@ -365,35 +193,53 @@ var app = {
         };
 
         if(app.has_bt) bluetoothSerial.write(data, success, failure);
-        else app.serial("S: " + data);
+        else ui.serial("S: " + data);
     },
 
     closePort:function(){
-        app.serial("Disconneting from "+app.macAddress);
+        ui.serial("Disconneting from "+app.macAddress);
         connectButton.innerHTML = "Connect";
         bluetoothSerial.unsubscribe(
             function(data){
-                app.serial(data);
+                ui.serial(data);
             },
             app.showError
         );
     },
 
     showError:function(error){
-        app.serial(error);
+        ui.serial(error);
     },
 
-    serial:function(message){
+    ////////////////// TOTO: Move to G-CODE MODEL //////////////////////
 
-       $('#serialMonitor').append($('<div></div>')
-            .addClass("serialLine")
-            .text(message)
-        );
+    updateModel: function(h, a, dist, ha, min, max){
+      select_flavor = new outputFlavor(raw_flavor.is.slice(0), raw_flavor.diameter, h, a,  render_raw, dist, ha, min, max);   
     },
 
-    clearSerial:function(){
-        var display = document.getElementById("serialMonitor");
-        display.innerHTML = "";
+    ////////////////// FILE SYSTEM FUNCTIONS //////////////////////
+
+    loadFile: function(path, callback /* function(contents) */) {
+      $.get(path, null, callback, 'text')
+        .error(function() { error() });
+    },
+
+
+
+    openGCodeFromPath: function(path) {
+        console.log("opening from path", path);
+        app.loadFile(path, function(gcode) {
+        createGeometryFromGCode(gcode);
+      });
+    },
+
+    openGCodeFromText: function(name, gcode) {
+      console.log("opening from text", name);  
+      createGeometryFromGCode(gcode);
+             
+      // app.localStorage.setItem('last-imported', gcode);
+      // app.localStorage.setItem('last-filename', name);
+      // app.localStorage.removeItem('last-loaded');
     }
 
 };

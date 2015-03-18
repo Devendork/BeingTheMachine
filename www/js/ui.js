@@ -1,355 +1,178 @@
-var render_raw = true;
-var scene2d = null;
-var scene3d = null;
+var ui = {
 
+  init: function(){
+    console.log("init UI");
 
-$('#dimension_3d').attr('checked', 'checked');
-$('#render_raw').attr('checked', 'checked');
+  //load vars for each div tag
+    ui.div_2d = $('#renderArea2d');
+    ui.div_3d = $('#renderArea3d');
 
+    var div_file_alert = $('#file_alert');
+    ui.div_bt_alert = $('#bluetooth_alert');
+    ui.div_bt_menu =  $('#bt_menu');    
+    ui.div_serial = $('#serialMonitor');
 
-//this will run first 
-$('#opt').change(function(evt){
-    console.log("UPDATE OPT");
+    var range_layer = $("#layerRange");
+    var range_inst = $("#instRange");
 
-    console.log($('#render_adjusted').prop("checked"));
-    console.log($('#render_raw').prop("checked"));
+    var but_increment = $("#increment");
+    var but_decrement = $("#decrement");
+    var but_connect = $("#connect");
+    var but_bt_close = $("#bt_close_select");
+    var but_toggle_view = $("#toggleView");
 
-    var m = parseFloat($('#force_height').val());
-    var a = parseInt($('#force_angle').val());
-    var d = parseInt($('#force_distance').val());
-    var ha =  parseInt($('#force_halfangle').val());
-    var mi = parseInt($('#layer_min').val());
-    var ma = parseInt($('#layer_max').val());
+    var icon_square =  $('#square');
+    var icon_cube =  $('#cube');
 
-    if($('#render_adjusted').prop("checked")){
-      render_raw = false;
-    }else{
-      render_raw = true;
-    }
+    var class_bt = $('.bluetooth');
+    ui.class_bt_select = $('.bt_select');
 
-    if($('#dimension_3d').prop("checked")){
-      if(m == 0) m = raw_flavor.material_height;
-    }else{
-      m = 0;
-    }
+    //setup the interface
+    ui.div_3d.hide();
+    icon_square.hide();
+    ui.div_bt_alert.hide();
+    div_file_alert.hide();
+    class_bt.show();
 
-    updateModel( m, a, d, ha, mi, ma);
-    $('#force_height').val(select_flavor.material_height); 
-    $('#force_angle').val(select_flavor.laser_to_center); 
-    $('#force_halfangle').val(select_flavor.half_angle); 
-    $('#force_distance').val(select_flavor.laser.z); 
-    $('#layer_min').val(select_flavor.range.min); 
-    $('#layer_max').val(select_flavor.range.max); 
+    app.menu.setSwipeable(false);
+      
 
-});
+    range_layer.change(function(){
+      var i =  $(this).prop('value');
+      var showValue = +i+1;
+      d2.loadLayer(i); 
+      range_inst.prop('max', d2.instructions[i].length);
+      range_inst.prop('value', 0);
+    });
 
-//these two need dynamic updating
-$('#force_halfangle').change(function(evt){
-   $('#force_distance').val(-1);   
-});
+    range_inst.change(function(){
+      var i =  $(this).prop('value');
+      while(d2.step < i){
+        d2.nextStep();
+      }
+      while(d2.step > i){
+        d2.prevStep();
+      }
+    });
 
-//these two need dynamic updating
-$('#force_distance').change(function(evt){
-   $('#force_halfangle').val(-1); 
-});
-
-$('#dimension_2d').click(function (evt){
-  console.log("UPDATE DIMENSION");
-  $('#force_height').val(0);
-});
-
-
-$('#dimension_3d').click(function (evt){
-  console.log("3d clicked");
-  var h = $('#force_height').val();
-  if(h == 0) h = raw_flavor.material_height;
-  $('#force_height').val(h);
-});
-
-$('#render_raw').click(function(evt){
-  console.log("render_raw");
-  render_raw = true;
-});
-
-
-$('#render_adjusted').click(function(evt){
-  console.log("render_adjusted");
-  render_raw = false;
-});
-
-// $('#force_distance').change(function(evt){
-//   var d = $('#force_distance').val();
-//   console.log("force distance to "+d);
-//   updateModel(select_flavor.material_height, select_flavor.laser_to_center, d, -1);
-
-//   var a = $('#force_halfangle').val();
-//   console.log("half angle was "+a);
-
-//   //make sure that the half angle is in range for the hardware
-//   if(a > 38){
-//      updateModel(select_flavor.material_height, select_flavor.laser_to_center, -1, 38);
-//       $('#force_distance').val(select_flavor.laser.z);
-//   }else{
-//     $('#force_halfangle').val(select_flavor.half_angle);
-//   }
-  
-// });
-
-// $('#force_height').change(function(evt){
-//   var h = $('#force_height').val();
-//   console.log("force height to "+h);
-//   updateModel(h, select_flavor.laser_to_center, select_flavor.laser.z, select_flavor.half_angle);
-// });
-
-
-
-function updateModel(h, a, dist, ha, min, max){
-
-  if(hasGL) scene3d.remove(select_flavor.object); 
-  select_flavor = new outputFlavor(raw_flavor.is.slice(0), raw_flavor.diameter, h, a,  render_raw, dist, ha, min, max);   
-
-
-  scene2d.add(select_flavor);
-  if(hasGL) scene3d.add(select_flavor.object);
-
-  var m_size = Math.round(select_flavor.diameter* 100 ) / 100; 
-  var dist = Math.round(select_flavor.laser.z * 100 ) / 100; 
-  $("#model_material_size").text("Material Size: "+m_size+" mm");
-  $("#model_laser_distance").text("Distance from Base to Laser: "+dist+" mm");
-  $("#range_layer_max").val(select_flavor.is.length);       
-  console.log("in update, layer max "+raw_flavor.is.length);
-
-}
-
-/*
-$('#opt ').click(function(evt) {
-   var dim = $('input[name=dimension]:checked').val(); 
-   var ren = $('input[name=render]:checked').val(); 
-   var h = 0;
-   var fh = $('#force_height').val();
-   console.log("Forcing Height of "+ fh);
-
-
-   if(dim == "2d"){
-     h = 0;
-     use_height = false;
-     $('#force_height').prop('disabled', true);
-   } else{
-     if(fh != raw_flavor.height) h = fh;
-     else h = raw_flavor.height;
-     use_height = true;
-     $('#force_height').prop('disabled', false);
-   }
-
-  $('#force_height').val(h);
-  
-  if(dim == "raw") render_raw = true;
-  else render_raw= false;
-
-});
-*/
-
-
-function error(msg) {
-  alert(msg);
-}
-
-
-
-
-function loadFile(path, callback /* function(contents) */) {
-  $.get(path, null, callback, 'text')
-    .error(function() { error() });
-}
-
-function arduino(){
-  var data = getArduinoFile();
-  var file_lines = [];
-  file_lines.push("//// Values generated for "+$("#model_filename").text());
-  file_lines.push("//// Material Diameter "+select_flavor.diameter); 
-  file_lines.push("//// Material Height"+select_flavor.material_height); 
-  var file = loadFile("Arduino/Template_ArduinoStorage.ino", function(arduino){
-  var lines = arduino.split('\n');
-   console.log("num lines "+lines.length);
-
-    var deleting = false;
-
-      for (var i = 0; i < lines.length; i++) {
-        if(lines[i].indexOf("///**END") != -1){
-          deleting = false
-        }
-        if(!deleting) file_lines.push(lines[i]);
-
-        if(lines[i].indexOf("///**BEGIN") != -1){
-          for(var j = 0; j < data.length; j++){
-            file_lines.push(data[j]);
-          }
-          deleting = true;
-        }    
-      }  
-   
-    var new_file = file_lines.join("\n");
-    window.open('data:text/something.ino;charset=utf-8,' + escape(new_file));
-  });
-
-}
-
-function sdcard(){
-  console.log("sd card");
-  var data = getSDInstructions();
-  var new_file = data.join("\n");
-  window.open('data:text/sd_file.txt;charset=utf-8,' + escape(new_file));
-}
-
-function about() {
-  //$('#aboutModal').modal();
-}
-
-// $("#optionsModal").on('shown', function() {
-//   $(this).find("[autofocus]:first").focus();
-// });
-
-function options(evt) {
-  //$('#optionsModal').modal()
-}
-
-function openDialog() {
-  //$('#openModal').modal();
-}
-
-function checkKey(e){
-
-
-    e = e || window.event;
-    if (e.keyCode == '37') {
-        // left arrow
-       scene2d.prevStep();
-    }
-  else if (e.keyCode == '39') {
-        //right arrow
-    scene2d.nextStep(); 
-  }
-  else if(e.keyCode == '38'){
-    //up arrow
-    scene2d.nextLayer();
-  }else if(e.keyCode == '40'){
-    //down arrow
-    scene2d.prevLayer();
-  }
-
-}
-
-
-
-function openGCodeFromPath(path) {
-    console.log("opening from path", path);
-
-  //$('#openModal').modal('hide');
-  if (hasGL && select_flavor != undefined && select_flavor.object) {
-    scene3d.remove(select_flavor.object);
-  }
-
-  loadFile(path, function(gcode) {
-    createGeometryFromGCode(gcode);
-    scene2d.add(select_flavor);
+    //figure out how to use touch start /end for equivalent
+    var interval;
+    but_increment.mousedown(function() {
+        interval = setInterval(function(){
+          d2.nextStep();
+          app.sendData("next");
+        }, 100);
+    }).mouseup(function() {
+        clearInterval(interval);  
+    })
     
-    if(hasGL){
-      scene3d.add(select_flavor.object);
-    }
 
-    var path_print = path.slice(path.lastIndexOf("/")+1);
-    var m_size = Math.round(select_flavor.material_height * 100 ) / 100; 
-    var dist = Math.round(select_flavor.laser.z * 100 ) / 100; 
-    $("#model_filename").text("Filename: "+path_print);
-    $("#model_material_size").text("Material Size: "+m_size+" mm");
-    $("#model_laser_distance").text("Distance from Base to Laser: "+dist+" mm");
-
-
-    localStorage.setItem('last-loaded', path);
-    localStorage.removeItem('last-imported');
-  });
-}
-
-function openGCodeFromText(name, gcode) {
-  console.log("opening from text", name);
-  //$('#openModal').modal('hide');
-  if (hasGL && select_flavor && select_flavor.object) {
-    scene3d.remove(select_flavor.object);
-    }
-  
-    createGeometryFromGCode(gcode);
-    scene2d.add(select_flavor);
-  
-  if(hasGL){
-    scene3d.add(select_flavor.object);
-  } 
+    but_decrement.mousedown(function() {
+        interval = setInterval(function(){
+          d2.prevStep();
+          app.sendData("prev");
+        }, 100);
+    }).mouseup(function() {
+        clearInterval(interval);  
+    });
+    
+    but_connect.click(function(){
+        app.menu.toggle();
+        app.listPorts();
+        // var temp = [];
+        // temp.push({name:"BTM_BT1",address: "00:00:01"});
+        // temp.push({name:"BTM_BT2",address: "00:00:02"});
+        // app.selectConnection(temp);
+    });
 
 
-    var m_size = Math.round(select_flavor.material_height* 100 ) / 100; 
-    var dist = Math.round(select_flavor.laser.z * 100 ) / 100; 
-    $("#model_filename").text("Filename: "+name);
-    $("#model_material_size").text("Material Size: "+m_size+" mm");
-    $("#model_laser_distance").text("Distance from Base to Laser: "+dist+" mm");
-
-    localStorage.setItem('last-imported', gcode);
-    localStorage.setItem('last-filename', name);
-    localStorage.removeItem('last-loaded');
-}
+    but_bt_close.click(function(){
+          app.serial("removing connection");
+          div_bt_alert.hide();
+    });
 
 
-// var loadGraphics = function(view){
-//   console.log("load Graphics: "+view);
+     
+    but_toggle_view.click(function(){
+        if (app.view == "3d") {
+            app.view = "2d";
+            ui.div_3d.hide();
+            ui.div_2d.show();
+            icon_cube.show();
+            icon_square.hide();
+            if(app.hasGL)
+              d3.setControls(false); 
+
+        }else {
+            app.view = "3d"
+            ui.div_2d.hide();
+            ui.div_3d.show();
+            icon_cube.hide();
+            icon_square.show();
+            if(app.hasGL)
+              d3.setControls(true);
+        }
+    });
 
 
-// //   if (!Modernizr.webgl) {
-// //     alert('You need a WebGL capable browser to view the 3D portion of this.\n\nGet the latest Chrome or FireFox.');
-// //     hasGL = false;  
-// // }
+  },
 
-//   // if (!Modernizr.localstorage) {
-//   //   alert('You need a WebGL capable browser to view the 3D portion of this.\n\nGet the latest Chrome or FireFox.');
-//   //   hasGL = false;
-//   // }
+  glError:function(){
+    //update this later
+    // ui.div_3d.fontFamily('monospace');
+    // ui.div_3d.fontSize('13px');
+    // ui.div_3d.textAlign('center');
+    // ui.div_3d.color("#F00");
+    ui.div_3d.text(window.WebGLRenderingContext ? [
+             'Your graphics card does not seem to support <a href="http://khronos.org/webgl/wiki/Getting_a_WebGL_Implementation" style="color:#000">WebGL</a>.<br />',
+             'Find out how to get it <a href="http://get.webgl.org/" style="color:#000">here</a>.'
+         ].join( '\n' ) : [
+             'Your browser does not seem to support <a href="http://khronos.org/webgl/wiki/Getting_a_WebGL_Implementation" style="color:#000">WebGL</a>.<br/>',
+             'Find out how to get it <a href="http://get.webgl.org/" style="color:#000">here</a>.'
+         ].join( '\n' )
+         );
+  },
 
-//   // // Show 'About' dialog for first time visits.
-//   if (!localStorage.getItem("not-first-visit")) {
-//     localStorage.setItem("not-first-visit", true);
-//     setTimeout(about, 500);
-//   }
+  bluetoothAlert:function(list){
 
-  
-//   // Drop files from desktop onto main page to import them.
-//   // $('body').on('dragover', function(event) {
-//   //   event.stopPropagation();
-//   //   event.preventDefault();
-//   //   event.originalEvent.dataTransfer.dropEffect = 'copy'
-//   // }).on('drop', function(event) {
-//   //   event.stopPropagation();
-//   //   event.preventDefault();
-//   //   var files = event.originalEvent.dataTransfer.files;
-//   //   if (files.length > 0) {
-//   //     var reader = new FileReader();
-//   //     reader.onload = function() {
-//   //       openGCodeFromText(files[0].name, reader.result);
-//   //     };
-//   //     reader.readAsText(files[0]);
-//   //   }
-//   // });
+      ui.class_bt_select.remove(); //clear the list
+      
+      for(var i in list){
+         ui.div_bt_menu.prepend($('<button></button>')
+              .addClass("alert-dialog-button")
+              .addClass("bt_select")
+              .prop("value", list[i].address)
+              .text(list[i].name)
+          );
+          
+      }
 
-//   scene2d = new Scene2D($('#renderArea2d'));
-//   if(hasGL) scene3d = create3DScene($('#renderArea3d'));
+      class_bt_select.click(function(){
+          ui.serial("selected");
+          app.macAddress = $(this).prop('value');
+          $("#bluetooth_alert").hide();
+          app.menu.toggle();
+          app.manageConnection();
+      });
 
-//   var lastImported = localStorage.getItem('last-imported');
-//   var lastLoaded = localStorage.getItem('last-loaded');
-//   var lastFilename = localStorage.getItem('last-filename');
+      div_bt_alert.show();
+
+  },
+
+  serial: function(message){
+    ui.div_serial.append($('<div></div>')
+      .addClass("serialLine")
+      .text(message)
+    );
+  },
+
+  clearSerial:function(){
+    ui.div_serial.text("");
+  }
 
 
-//   if (lastImported) {
-//     openGCodeFromText(lastFilename, lastImported);
-//   } else {
-//     openGCodeFromPath(lastLoaded || 'gcode/octocat.gcode');
-//   }
-  
-  
-// }
+};
+
+
+
 

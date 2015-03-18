@@ -86,8 +86,6 @@ function outputFlavor(instructions, diameter, height, laser_to_center, raw, dist
     //RENDER PARAMS
     this.object = this.createObjectFromInstructions(this.is);
     //this.createLaser(this.laser);
-    console.log("NEW FLAVOR CREATED");
-    console.log(this);
 }
 
 outputFlavor.prototype.is = [];
