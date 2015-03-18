@@ -1,0 +1,59 @@
+.left {
+	text-align: left;
+}
+
+#serialMonitor{
+	font-family:monospace;
+	font-size: .8em;
+	overflow: scroll;
+	height: 80%;
+	display: block;
+	line-height: 1.2em;
+}
+
+.serialLine{
+	padding-bottom: 6px;
+}
+
+#layer_info, #model_info{
+	font-family:Helvetica, sans-serif;
+	color: #999;
+	font-size: 13px;
+	position:absolute;
+	top:85%;
+	left: 40px;
+}
+
+.rangeLabel{
+	color:#999;
+	line-height: 30px;
+}
+
+.percent{
+	color:#000;
+	line-height: 30px;
+	text-align: center;
+	padding:6px;
+}
+
+#renderArea2d{
+  	position:fixed;
+  	top:0px;
+	left:0px;
+	right:0px;
+	bottom:0px;
+	width:100%;
+	height:100%;
+  	background-color:#FFFFFF;
+}
+
+
+#renderArea3d{
+  	top:0px;
+	left:0px;
+	right:0px;
+	bottom:0px;
+	width:100%;
+	height:100%;
+  	background-color:#FFFFFF;
+}
