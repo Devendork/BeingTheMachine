@@ -43,6 +43,7 @@ var ui = {
       d2.loadLayer(i); 
       range_inst.prop('max', d2.instructions[i].length);
       range_inst.prop('value', 0);
+      bt.sendData('m');
     });
 
     range_inst.change(function(){
@@ -53,6 +54,9 @@ var ui = {
       while(d2.step > i){
         d2.prevStep();
       }
+
+      bt.sendData('m'); //move to this step on the arduino
+
     });
 
     //figure out how to use touch start /end for equivalent
@@ -60,7 +64,7 @@ var ui = {
     but_increment.mousedown(function() {
         interval = setInterval(function(){
           d2.nextStep();
-          app.sendData("next");
+          bt.sendData('m'); 
         }, 100);
     }).mouseup(function() {
         clearInterval(interval);  
@@ -70,7 +74,7 @@ var ui = {
     but_decrement.mousedown(function() {
         interval = setInterval(function(){
           d2.prevStep();
-          app.sendData("prev");
+          bt.sendData('m'); 
         }, 100);
     }).mouseup(function() {
         clearInterval(interval);  
@@ -78,17 +82,20 @@ var ui = {
     
     but_connect.click(function(){
         app.menu.toggle();
-        app.listPorts();
-        // var temp = [];
-        // temp.push({name:"BTM_BT1",address: "00:00:01"});
-        // temp.push({name:"BTM_BT2",address: "00:00:02"});
-        // app.selectConnection(temp);
+        if(app.has_bt) bt.listPorts();
+        else{
+          var temp = [];
+          temp.push({name:"BTM_BT1",address: "00:00:01"});
+          temp.push({name:"BTM_BT2",address: "00:00:02"});
+          ui.bluetoothAlert(temp);
+        } 
+
     });
 
 
     but_bt_close.click(function(){
-          app.serial("removing connection");
-          div_bt_alert.hide();
+          ui.serial("removing connection");
+          ui.div_bt_alert.hide();
     });
 
 
@@ -134,8 +141,8 @@ var ui = {
   },
 
   bluetoothAlert:function(list){
-
-      ui.class_bt_select.remove(); //clear the list
+      console.log("alert");
+      $('.bt_select').remove(); //clear the list
       
       for(var i in list){
          ui.div_bt_menu.prepend($('<button></button>')
@@ -147,15 +154,15 @@ var ui = {
           
       }
 
-      class_bt_select.click(function(){
-          ui.serial("selected");
+      $('.bt_select').click(function(){
           app.macAddress = $(this).prop('value');
-          $("#bluetooth_alert").hide();
+          ui.serial("selected: "+bt.macAddress);
+          ui.div_bt_alert.hide();
           app.menu.toggle();
-          app.manageConnection();
+          if(app.has_bt) bt.manageConnection();
       });
 
-      div_bt_alert.show();
+      ui.div_bt_alert.show();
 
   },
 

@@ -28,7 +28,7 @@ var app = {
     macAddress:undefined,
     chars:"",
     view: "2d",
-    has_bt: false,    
+    has_bt: false,  
 
     // Application Constructor
     initialize: function() {
@@ -49,7 +49,8 @@ var app = {
     initUI:function(){
 
         app.hasGL = Detector.webgl;
-        ui.init();        
+        bt.init();        
+        ui.init();
 
         function loadFile(){
             app.lastImported = localStorage.getItem('last-imported');
@@ -85,7 +86,7 @@ var app = {
     // function, we must explicitly call 'app.receivedEvent(...);'
     onDeviceReady: function() {
         app.has_bt = true;
-        app.listPorts();
+        bt.init();
 
         // var interval;
         // var triggerNext = function(){
@@ -173,11 +174,26 @@ var app = {
     openPort:function(){
         ui.serial("Connected to: "+app.macAddress);
         bluetoothSerial.subscribe('\n', app.onData, app.showError);
+
+        //send the initialization command
+        app.sendData("i 0 0 10 10");
     },
 
     onData:function(data){
-        $
-        ui.serial(data);
+        ui.serial("-> "+ data);
+        // i: say hello / initialize / handshake
+        // s: start playing
+        // e: end playing
+        // n: send next instruction
+        // p: send previous instruction
+        // i x: go to instruction number x
+        // l x: go to layer number x
+        // f: play forward (give next instruction)
+        // b: play backward (give prev instruciton)
+
+        var trigger = {
+
+        }
     },
 
     sendData: function(data) { // send data to Arduino
@@ -185,15 +201,15 @@ var app = {
 
         var success = function() {
             console.log("success");
-            ui.serial("S: " + data);
+            ui.serial("<- " + data);
         };
 
         var failure = function() {
             app.showError("Failed writing data to Bluetooth peripheral");
         };
 
-        if(app.has_bt) bluetoothSerial.write(data, success, failure);
-        else ui.serial("S: " + data);
+        if(app.has_bt) bluetoothSerial.write(data+'\n', success, failure);
+        else ui.serial("<- " + data);
     },
 
     closePort:function(){

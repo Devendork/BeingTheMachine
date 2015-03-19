@@ -16,14 +16,14 @@ function createGeometryFromGCode(gcode) {
   //    http://en.wikipedia.org/wiki/G-code
   //    SprintRun source code
 
+  var layers = [];
+  var layer = undefined;
+
+
   instructions.push([]); //push an empty layer  
 
   var has_z = false;
   var lastLine = {x:null, y:null, z:0, e:0, f:0, extruding:false};
-
-  var layers = [];
-  var layer = undefined;
-
 
   var relative = false;
   function delta(v1, v2) {
@@ -580,6 +580,25 @@ function createArduinoInstructions(){
 
    return ilist;
 }
+
+function computeArduinoBounds(){
+  var flavor = select_flavor;
+  var min_ms = 1500 - select_flavor.half_angle*10;
+  var bounds = {
+    x: {min: flavor.bbox.min.x, max: flavor.bbox.max.x},
+    y: {min: flavor.bbox.min.y, max: flavor.bbox.max.y},
+  };
+
+  var ms_min  = select_flavor.toMicroseconds(0, bounds.x.min, bounds.y.min, flavor.bbox.max.z);
+  var ms_max  = select_flavor.toMicroseconds(0, bounds.x.max, bounds.y.max, flavor.bbox.max.z);
+
+  bounds.x = {min: ms_min.x, max: ms_max.x};
+  bounds.y = {min: ms_min.y, max: ms_max.y};
+
+  return bounds;
+}
+
+  
 
 function getArduinoFile(){
   var lines = [];

@@ -513,7 +513,7 @@ var d3 ={
 	  $(window).on('resize', function() {
 	  	var w = element.width();
 	  	var h = element.height;
-	    renderer.setSize(w, h);
+	    d3.renderer.setSize(w, h);
 	    d3.camera.aspect = w / h;
 	    d3.camera.updateProjectionMatrix();
 	    d3.controls.screen.width = w;
