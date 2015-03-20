@@ -36,7 +36,6 @@ var bt = {
         ui.serial("manage connection");
 
         var connect = function(){
-            ui.clearSerial();
             ui.serial("attempting to connect. " +
                     "make sure the serial port is open on the target device");
 
@@ -50,8 +49,8 @@ var bt = {
         var disconnect = function(){
             ui.serial("attemtping to disconnect");
             bluetoothSerial.disconnect(
-                app.closePort,
-                app.showError
+                bt.closePort,
+                bt.showError
             );
         };
 
@@ -62,7 +61,7 @@ var bt = {
     openPort:function(){
         ui.serial("Connected to: "+bt.macAddress);
         bluetoothSerial.subscribe('\n', bt.onData, bt.showError);
-        app.sendData("i");
+        bt.sendData("i");
     },
 
     onData:function(data){

@@ -141,7 +141,6 @@ var ui = {
   },
 
   bluetoothAlert:function(list){
-      console.log("alert");
       $('.bt_select').remove(); //clear the list
       
       for(var i in list){
@@ -155,7 +154,7 @@ var ui = {
       }
 
       $('.bt_select').click(function(){
-          app.macAddress = $(this).prop('value');
+          bt.macAddress = $(this).prop('value');
           ui.serial("selected: "+bt.macAddress);
           ui.div_bt_alert.hide();
           app.menu.toggle();
@@ -174,7 +173,7 @@ var ui = {
   },
 
   clearSerial:function(){
-    ui.div_serial.text("");
+    //ui.div_serial.text("");
   }
 
 

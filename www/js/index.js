@@ -52,6 +52,37 @@ var app = {
         bt.init();        
         ui.init();
 
+
+
+
+        if(app.has_bt){
+
+            function fail(){
+                ui.serial("fail");
+            }
+            ui.serial("init has bluetooth");
+            window.requestFileSystem(LocalFileSystem.PERSISTENT, 0, function(fileSystem){
+               ui.serial("has file system");
+               ui.serial("name "+fileSystem.root.name);
+               fileSystem.root.getDirectory("../BTM.app/www/", {create: true}, function(entry) { 
+                  ui.serial("got directory");
+
+                  entry.getFile("index.html", {create: false}, function(fileEntry) {
+                     ui.serial("got file");
+
+                     fileEntry.file(function(file){
+                        var reader = new FileReader();
+                        reader.onloadend = function(evt) {
+                           ui.serial(evt.target.result);
+                        };
+                        reader.readAsText(file);             
+                     }, fail);
+                  }, fail);
+               });
+            }, fail);
+        }
+        
+
         function loadFile(){
             app.lastImported = localStorage.getItem('last-imported');
             app.lastLoaded = localStorage.getItem('last-loaded');
@@ -60,7 +91,7 @@ var app = {
             if (app.lastImported) {
                 app.openGCodeFromText(app.lastFilename, app.lastImported);
             } else {
-                app.openGCodeFromPath(app.lastLoaded || 'gcode/hand.gcode');
+               app.openGCodeFromPath('gcode/hand.gcode');
             }
         }
 
@@ -75,18 +106,17 @@ var app = {
 
         d3.setControls(false);
 
-         if(!app.hasGL) ui.glError();
+        if(!app.hasGL) ui.glError();
+
 
     },
 
 
-    // deviceready Event Handler
-    //
-    // The scope of 'this' is the event. In order to call the 'receivedEvent'
-    // function, we must explicitly call 'app.receivedEvent(...);'
     onDeviceReady: function() {
         app.has_bt = true;
-        bt.init();
+
+        //THIS IS CALLED BEFORE INIT UI, YOU CANNOT CALL ANYTHING FROM BT OR UI IN HERE
+
 
         // var interval;
         // var triggerNext = function(){
@@ -116,117 +146,7 @@ var app = {
         
     },
 
-    ////////////////// BLUETOOTH FUNCTIONS //////////////////////
-
-    listPorts: function(){
-        //app.receivedEvent('deviceready');
-        var listPorts = function(){
-            bluetoothSerial.list(
-                function(results){
-                    ui.serial(JSON.stringify(results));
-                    ui.bluetoothAlert(results);
-                },
-                function(error){
-                    ui.serial(JSON.stringify(error));
-                }
-            );
-        }
-
-        var notEnabled = function(){
-            ui.serial("Bluetooth is not enabled");
-        }
-
-        bluetoothSerial.isEnabled(
-            listPorts,
-            notEnabled
-        );
-
-    },
-
-
-    manageConnection: function(){
-        ui.serial("manage connection");
-
-        var connect = function(){
-            ui.clearSerial();
-            ui.serial("attempting to connect. " +
-                    "make sure the serial port is open on the target device");
-
-            bluetoothSerial.connect(
-                app.macAddress,
-                app.openPort,
-                app.showError
-                );
-        };
-
-        var disconnect = function(){
-            ui.serial("attemtping to disconnect");
-            bluetoothSerial.disconnect(
-                app.closePort,
-                app.showError
-            );
-        };
-
-        bluetoothSerial.isConnected(disconnect,connect);
-    },
-
-
-    openPort:function(){
-        ui.serial("Connected to: "+app.macAddress);
-        bluetoothSerial.subscribe('\n', app.onData, app.showError);
-
-        //send the initialization command
-        app.sendData("i 0 0 10 10");
-    },
-
-    onData:function(data){
-        ui.serial("-> "+ data);
-        // i: say hello / initialize / handshake
-        // s: start playing
-        // e: end playing
-        // n: send next instruction
-        // p: send previous instruction
-        // i x: go to instruction number x
-        // l x: go to layer number x
-        // f: play forward (give next instruction)
-        // b: play backward (give prev instruciton)
-
-        var trigger = {
-
-        }
-    },
-
-    sendData: function(data) { // send data to Arduino
-
-
-        var success = function() {
-            console.log("success");
-            ui.serial("<- " + data);
-        };
-
-        var failure = function() {
-            app.showError("Failed writing data to Bluetooth peripheral");
-        };
-
-        if(app.has_bt) bluetoothSerial.write(data+'\n', success, failure);
-        else ui.serial("<- " + data);
-    },
-
-    closePort:function(){
-        ui.serial("Disconneting from "+app.macAddress);
-        connectButton.innerHTML = "Connect";
-        bluetoothSerial.unsubscribe(
-            function(data){
-                ui.serial(data);
-            },
-            app.showError
-        );
-    },
-
-    showError:function(error){
-        ui.serial(error);
-    },
-
+    
     ////////////////// TOTO: Move to G-CODE MODEL //////////////////////
 
     updateModel: function(h, a, dist, ha, min, max){
@@ -245,13 +165,13 @@ var app = {
     openGCodeFromPath: function(path) {
         console.log("opening from path", path);
         app.loadFile(path, function(gcode) {
-        createGeometryFromGCode(gcode);
-      });
+            createGeometryFromGCode(gcode);
+        });
     },
 
     openGCodeFromText: function(name, gcode) {
       console.log("opening from text", name);  
-      createGeometryFromGCode(gcode);
+        createGeometryFromGCode(gcode);
              
       // app.localStorage.setItem('last-imported', gcode);
       // app.localStorage.setItem('last-filename', name);
