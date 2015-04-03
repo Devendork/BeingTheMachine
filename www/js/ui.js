@@ -14,6 +14,7 @@ var ui = {
 
     var range_layer = $("#layerRange");
     var range_inst = $("#instRange");
+    var render_layers = $("#render_layers");
 
     var but_increment = $("#increment");
     var but_decrement = $("#decrement");
@@ -36,12 +37,17 @@ var ui = {
 
     app.menu.setSwipeable(false);
       
+    render_layers.change(function(){
+      all_layers = this.checked;
+    });
+
 
     range_layer.change(function(){
       var i =  $(this).prop('value');
       var showValue = +i+1;
-      d2.loadLayer(i); 
-      range_inst.prop('max', d2.instructions[i].length);
+      d2.loadLayer(i);
+      d3.updateLayer(i); 
+      range_inst.prop('max', select_flavor.is[i].length);
       range_inst.prop('value', 0);
       bt.sendData('m');
     });
@@ -60,6 +66,7 @@ var ui = {
     });
 
     //figure out how to use touch start /end for equivalent
+    if(!app.has_bt){
     var interval;
     but_increment.mousedown(function() {
         interval = setInterval(function(){
@@ -79,6 +86,17 @@ var ui = {
     }).mouseup(function() {
         clearInterval(interval);  
     });
+  }else{
+    but_increment.click(function() {
+          d2.nextStep();
+          bt.sendData('m'); 
+    });
+
+    but_decrement.click(function() {
+          d2.prevStep();
+          bt.sendData('m'); 
+    });
+  }
     
     but_connect.click(function(){
         app.menu.toggle();

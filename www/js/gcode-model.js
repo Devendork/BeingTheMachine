@@ -1,4 +1,3 @@
-var extruder_value = false;
 var raw_flavor = undefined;
 var select_flavor = undefined;
 
@@ -9,7 +8,8 @@ function createGeometryFromGCode(gcode) {
   select_flavor = undefined;
   instructions = [];
   layer_heights = [];
-   extruder_value = false;
+  extruder_value = false;
+  count = 0;
 
   // GCode descriptions come from:
   //    http://reprap.org/wiki/G-code
@@ -27,38 +27,11 @@ function createGeometryFromGCode(gcode) {
 
   var relative = false;
   function delta(v1, v2) {
-    return relative ? v2 : v2 - v1;
+    return relative ? v2 : Math.abs(v2 - v1);
   }
   function absolute (v1, v2) {
     return relative ? v1 + v2 : v2;
   }
-
-
-  function addMove(p1, p2) {
-
-    var s = p2.f; //units: mm/min	
-    var e = delta(p1.e, p2.e); //mm's extruded
-    var dx = delta(p2.x, p1.x);
-    var dy = delta(p2.y, p1.y);
-    var dz = delta(p1.z, p2.z);
-    var move_distance = Math.sqrt(dx*dx + dy*dy + dz*dz);
-    if(dz > 0){          
-        dz = Math.round(dz * 10)/10;
-        layer_heights.push(dz);
-    }
-
-    var obj = {
-      to: p2,
-      speed:s,
-      //coords: {dx: dx, dy:dy, dz:dz},  
-      d_traveling: move_distance,
-      d_extruding: e,
-    }
-
-    return obj;
-
-  }
-
 
   var parser = new GCodeParser({  	
     G1: function(args, line) {
@@ -70,6 +43,15 @@ function createGeometryFromGCode(gcode) {
       // happens from the current extruded length to a length of
       // 22.4 mm.
 
+      function isValid(line){
+        if(line.x === null) return false;
+        if(line.y === null) return false;
+        if(line.z === null) return false;
+        return true;
+      };
+
+ 
+
       var newLine = {
         x: args.x !== undefined ? absolute(lastLine.x, args.x) : lastLine.x,
         y: args.y !== undefined ? absolute(lastLine.y, args.y) : lastLine.y,
@@ -78,65 +60,90 @@ function createGeometryFromGCode(gcode) {
         f: args.f !== undefined ? absolute(lastLine.f, args.f) : lastLine.f,
       };
 
-      var instruction_text = "G1";
-      if(args.x !== undefined) instruction_text = instruction_text +" X"+args.x;
-      if(args.y !== undefined) instruction_text = instruction_text +" Y"+args.y;
-      if(args.z !== undefined) instruction_text = instruction_text +" Z"+args.z;
-      if(args.f !== undefined) instruction_text = instruction_text +" F"+args.f;
-      if(args.e !== undefined) instruction_text = instruction_text +" E"+args.e;
 
-      if(instructions.length == 0 || 
-         ((delta(lastLine.z, newLine.z) > 0) && has_z != false)){
-        instructions.push([]); //create a new layer of instructions	
+      if(isValid(newLine) && isValid(lastLine)){
+        // console.log(newLine);
+        // console.log(lastLine);
+        var de = delta(lastLine.e, newLine.e);
+        var dx = delta(lastLine.x, newLine.x);
+        var dy = delta(lastLine.y, newLine.y);
+        var dz = delta(lastLine.z, newLine.z);
+
+        if(dx > 0 || dy > 0 || dz > 0){
+          if(instructions.length == 0 || dz > 0){
+            instructions.push([]); //create a new layer of instructions 
+            layer_heights.push(dz);
+
+            //push the first valid instruction twice so we don't loose the starting point since all 
+            //the instructions will be referencing their "to" location
+            if(instructions.length == 0){
+              var instruction = {
+                id: count++, //this is a unique id for the instruction
+                z: lastLine.z,
+                to: {x:lastLine.x, y:lastLine.y},
+                ext: (de > 0)
+              };
+              instructions[instructions.length-1].push(instruction);
+
+            }
+
+          }
+
+          //only add an instruction if there has been some movement in the xy plane
+          //if(dx > 0 || dy > 0){
+            var instruction = {
+              id: count++, //this is a unique id for the instruction
+              z: lastLine.z,
+              to: {x:newLine.x, y:newLine.y},
+              ext: (de > 0)
+            };
+
+
+            instructions[instructions.length-1].push(instruction);
+          //}
+        }else{
+          // console.log("no movement at "+count);
+          // console.log(lastLine);
+          // console.log(newLine);
+          // console.log(dx);
+        }
+      }else{
+        console.log("invalid at "+count);
       }
 
-      if(args.z !== undefined) has_z = true;
-
-      var instruction = {
-        text: instruction_text,
-        desc: "Controlled move: move in straight line to coordinate",
-        type: "G1",
-        ext: (delta(lastLine.e, newLine.e) > 0) || (extruder_value),
-        coord: {x:lastLine.x, y:lastLine.y, z:lastLine.z},
-        obj: addMove(lastLine, newLine)
-      };
-
-
-      instructions[instructions.length-1].push(instruction);
       lastLine = newLine;
 
     },
 
 
-    G21: function(args) {
-      // G21: Set Units to Millimeters
-      // Example: G21
-      // Units from now on are in millimeters. (This is the RepRap default.)
-      // No-op: So long as G20 is not supported.
-      var i = {
-        text: "G21",
-        desc: "Set Units to Millimeters (RepRap Default)",
-        type: "G21",
-        ext: extruder_value,
-        coord: {x:lastLine.x, y:lastLine.y, z:lastLine.z},
-        obj:null};
-        console.log(instructions.length);
-        instructions[instructions.length-1].push(i);
-    },
+    // G21: function(args) {
+    //   // G21: Set Units to Millimeters
+    //   // Example: G21
+    //   // Units from now on are in millimeters. (This is the RepRap default.)
+    //   // No-op: So long as G20 is not supported.
+    //   var i = {
+    //     text: "G21",
+    //     desc: "Set Units to Millimeters (RepRap Default)",
+    //     type: "G21",
+    //     ext: extruder_value,
+    //     coord: {x:lastLine.x, y:lastLine.y, z:lastLine.z},
+    //     obj:null};
+    //     //instructions[instructions.length-1].push(i);
+    // },
 
     G28: function(args) {
       // G28: Return to Origin
       // Example: G28
       // no op at this point
-      var i = {
-        text: "G28",
-        desc: "Move To Origin",
-        type: "G28",
-        ext: extruder_value,
-        coord: {x:lastLine.x, y:lastLine.y, z:lastLine.z},
-        obj:null};
+      // var i = {
+      //   text: "G28",
+      //   desc: "Move To Origin",
+      //   type: "G28",
+      //   ext: extruder_value,
+      //   coord: {x:lastLine.x, y:lastLine.y, z:lastLine.z},
+      //   obj:null};
 
-        instructions[instructions.length-1].push(i);
+      //   instructions[instructions.length-1].push(i);
     },
 
 
@@ -145,255 +152,254 @@ function createGeometryFromGCode(gcode) {
       // Example: G90
       // All coordinates from now on are absolute relative to the
       // origin of the machine. (This is the RepRap default.)
-      var i = {
-        text: "G90",
-        desc: "Set to Absolute Positioning (RepRap Default)",
-        type: "G90",
-        ext: extruder_value,
-        coord: {x:lastLine.x, y:lastLine.y, z:lastLine.z},
-        obj:null};
-        instructions[instructions.length-1].push(i);
-
+      // var i = {
+      //   text: "G90",
+      //   desc: "Set to Absolute Positioning (RepRap Default)",
+      //   type: "G90",
+      //   ext: extruder_value,
+      //   coord: {x:lastLine.x, y:lastLine.y, z:lastLine.z},
+      //   obj:null};
+      //   //instructions[instructions.length-1].push(i);
 
         relative = false;
     },
 
-    G91: function(args) {
-      // G91: Set to Relative Positioning
-      // Example: G91
-      // All coordinates from now on are relative to the last position.
+    // G91: function(args) {
+    //   // G91: Set to Relative Positioning
+    //   // Example: G91
+    //   // All coordinates from now on are relative to the last position.
 
-      //TODO
-      var i = {
-        text: "G91",
-        desc: "Set to Relative Positioning (not supported by visualization)",
-        type:"G91",
-        ext: extruder_value,
-        coord: {x:lastLine.x, y:lastLine.y, z:lastLine.z},
-        obj:null};
-        instructions[instructions.length-1].push(i);
+    //   //TODO
+    //   var i = {
+    //     text: "G91",
+    //     desc: "Set to Relative Positioning (not supported by visualization)",
+    //     type:"G91",
+    //     ext: extruder_value,
+    //     coord: {x:lastLine.x, y:lastLine.y, z:lastLine.z},
+    //     obj:null};
+    //     //instructions[instructions.length-1].push(i);
 
-        relative = true;
-    },
+    //     relative = true;
+    // },
 
-    G92: function(args) { // E0
-      // G92: Set Position
-      // Example: G92 E0
-      // Allows programming of absolute zero point, by reseting the
-      // current position to the values specified. This would set the
-      // machine's X coordinate to 10, and the extrude coordinate to 90.
-      // No physical motion will occur.
+    // G92: function(args) { // E0
+    //   // G92: Set Position
+    //   // Example: G92 E0
+    //   // Allows programming of absolute zero point, by reseting the
+    //   // current position to the values specified. This would set the
+    //   // machine's X coordinate to 10, and the extrude coordinate to 90.
+    //   // No physical motion will occur.
 
-      // TODO: Only support E0
-      var newLine = lastLine;
-      newLine.x= args.x !== undefined ? args.x : newLine.x;
-      newLine.y= args.y !== undefined ? args.y : newLine.y;
-      newLine.z= args.z !== undefined ? args.z : newLine.z;
-      newLine.e= args.e !== undefined ? args.e : newLine.e;
+    //   // TODO: Only support E0
+    //   var newLine = lastLine;
+    //   newLine.x= args.x !== undefined ? args.x : newLine.x;
+    //   newLine.y= args.y !== undefined ? args.y : newLine.y;
+    //   newLine.z= args.z !== undefined ? args.z : newLine.z;
+    //   newLine.e= args.e !== undefined ? args.e : newLine.e;
 
-      var instruction_text = "G92";
-      if(args.x !== undefined) instruction_text = instruction_text +" X"+args.x;
-      if(args.y !== undefined) instruction_text = instruction_text +" Y"+args.y;
-      if(args.z !== undefined) instruction_text = instruction_text +" Z"+args.z;
-      if(args.e !== undefined) instruction_text = instruction_text +" E"+args.e;
+    //   var instruction_text = "G92";
+    //   if(args.x !== undefined) instruction_text = instruction_text +" X"+args.x;
+    //   if(args.y !== undefined) instruction_text = instruction_text +" Y"+args.y;
+    //   if(args.z !== undefined) instruction_text = instruction_text +" Z"+args.z;
+    //   if(args.e !== undefined) instruction_text = instruction_text +" E"+args.e;
 
-      var i = {
-        text: instruction_text,
-        desc: "Set Position: Set Machine Zero Point (not supported by visualization)",
-        type:"G92",
-        ext: extruder_value || (delta(lastLine.e, newLine.e) > 0),
-        coord: {x:lastLine.x, y:lastLine.y, z:lastLine.z},
-        obj:null};
-        instructions[instructions.length-1].push(i);
+    //   var i = {
+    //     text: instruction_text,
+    //     desc: "Set Position: Set Machine Zero Point (not supported by visualization)",
+    //     type:"G92",
+    //     ext: extruder_value || (delta(lastLine.e, newLine.e) > 0),
+    //     coord: {x:lastLine.x, y:lastLine.y, z:lastLine.z},
+    //     obj:null};
+    //     //instructions[instructions.length-1].push(i);
 
-        lastLine = newLine;
-    },
+    //     lastLine = newLine;
+    // },
 
-    M82: function(args) {
-      // M82: Set E codes absolute (default)
-      // Descriped in Sprintrun source code.
+    // M82: function(args) {
+    //   // M82: Set E codes absolute (default)
+    //   // Descriped in Sprintrun source code.
 
-      // No-op, so long as M83 is not supported.
-    },
+    //   // No-op, so long as M83 is not supported.
+    // },
 
-    M84: function(args) {
-      // M84: Stop idle hold
-      // Example: M84
-      // Stop the idle hold on all axis and extruder. In some cases the
-      // idle hold causes annoying noises, which can be stopped by
-      // disabling the hold. Be aware that by disabling idle hold during
-      // printing, you will get quality issues. This is recommended only
-      // in between or after printjobs.
+    // M84: function(args) {
+    //   // M84: Stop idle hold
+    //   // Example: M84
+    //   // Stop the idle hold on all axis and extruder. In some cases the
+    //   // idle hold causes annoying noises, which can be stopped by
+    //   // disabling the hold. Be aware that by disabling idle hold during
+    //   // printing, you will get quality issues. This is recommended only
+    //   // in between or after printjobs.
 
-      // No-op
-    },
+    //   // No-op
+    // },
 
-    M101: function(args) {
-      var i = {
-        text: "M101",
-        desc: "Turn Extruder 1 on Forward", 
-        type:"M101",
-        ext: true, 
-        coord: {x:lastLine.x, y:lastLine.y, z:lastLine.z},
-        obj:null};
-        instructions[instructions.length-1].push(i);
-        extruder_value = true;
+    // M101: function(args) {
+    //   var i = {
+    //     text: "M101",
+    //     desc: "Turn Extruder 1 on Forward", 
+    //     type:"M101",
+    //     ext: true, 
+    //     coord: {x:lastLine.x, y:lastLine.y, z:lastLine.z},
+    //     obj:null};
+    //     //instructions[instructions.length-1].push(i);
+    //     extruder_value = true;
 
-    },
-
-
-    M103: function(args) {
-      var i = {
-        text: "M103",
-        desc: "Turn all extruders off", 
-        type:"M103",
-        ext:false,
-        coord: {x:lastLine.x, y:lastLine.y, z:lastLine.z},
-        obj:null};
-        instructions[instructions.length-1].push(i);
-        extruder_value = false;
-
-    },
-
-    M104: function(args) {
-      var itext = (args.s !== undefined) ? "S"+args.s : "";
-      var i = {
-        text: "M104 "+itext,
-        desc: "Set Extruder Temp to S (Celcius)",
-        type:"M104",
-        ext: extruder_value,
-        coord: {x:lastLine.x, y:lastLine.y, z:lastLine.z},
-        obj:null};
-        instructions[instructions.length-1].push(i);
-    },
-
-    M105: function(args) {
-      var i = {
-        text: "M105",
-        desc: "Get Extruder Temperature", 
-        type:"M105",
-        ext: extruder_value,
-        coord: {x:lastLine.x, y:lastLine.y, z:lastLine.z},
-        obj:null};
-        instructions[instructions.length-1].push(i);
-
-    },
-
-    M106: function(args) {
-
-      var itext = (args.s !== undefined) ? " S"+args.s : "";
-      var i = {
-        text: "M106 "+itext, 
-        desc: "Turn Fan On",
-        type:"M106",
-        ext: extruder_value,
-        coord: {x:lastLine.x, y:lastLine.y, z:lastLine.z},
-        obj:null};
-        instructions[instructions.length-1].push(i);
-
-    },
-
-    M107: function(args) {
-
-      var itext = (args.s !== undefined) ? " S"+args.s : "";
-      var i = {
-        text: "M107",
-        desc: "Fan Off (Deprecated)",
-        type:"M107",
-        ext: extruder_value,
-        coord: {x:lastLine.x, y:lastLine.y, z:lastLine.z},
-        obj:null};
-        instructions[instructions.length-1].push(i);
-
-    },
-
-    M108: function(args) {
-      var itext = (args.s !== undefined) ? "S"+args.s : "";
-      var i = {
-        text: "M108 "+itext,
-        desc: "Set Extruder Motor Speed to S (deprecated)",
-        type:"M108",
-        ext: false,
-        coord: {x:lastLine.x, y:lastLine.y, z:lastLine.z},
-        obj:null};
-        instructions[instructions.length-1].push(i);
-
-        //I'm going to assume that this turns the extruder off
-        //if(args.s !== undefined) extruder_value = args.s/210;
-        extruder_value = false;
-
-    },
-    M109: function(args) {
-      var i = {
-        text: "M109",
-        desc: "Set Extruder Temperature and Wait", 
-        type:"M109",
-        ext: false,
-        coord: {x:lastLine.x, y:lastLine.y, z:lastLine.z},
-        obj:null};
-        instructions[instructions.length-1].push(i);
-
-    },
+    // },
 
 
-    M113: function(args) {
-      var itext = (args.s !== undefined) ? "S"+args.s : "";
-      var i = {
-        text: "M113 "+itext,
-        desc: "Set Extruder PWM to S (.1 = 10%)",
-        type:"M113",
-        ext: true,
-        coord: {x:lastLine.x, y:lastLine.y, z:lastLine.z},
-        obj:null};
-        instructions[instructions.length-1].push(i);
+    // M103: function(args) {
+    //   var i = {
+    //     text: "M103",
+    //     desc: "Turn all extruders off", 
+    //     type:"M103",
+    //     ext:false,
+    //     coord: {x:lastLine.x, y:lastLine.y, z:lastLine.z},
+    //     obj:null};
+    //     //instructions[instructions.length-1].push(i);
+    //     extruder_value = false;
 
-        extruder_value = true;
-    },
+    // },
+
+    // M104: function(args) {
+    //   var itext = (args.s !== undefined) ? "S"+args.s : "";
+    //   var i = {
+    //     text: "M104 "+itext,
+    //     desc: "Set Extruder Temp to S (Celcius)",
+    //     type:"M104",
+    //     ext: extruder_value,
+    //     coord: {x:lastLine.x, y:lastLine.y, z:lastLine.z},
+    //     obj:null};
+    //     //instructions[instructions.length-1].push(i);
+    // },
+
+    // M105: function(args) {
+    //   var i = {
+    //     text: "M105",
+    //     desc: "Get Extruder Temperature", 
+    //     type:"M105",
+    //     ext: extruder_value,
+    //     coord: {x:lastLine.x, y:lastLine.y, z:lastLine.z},
+    //     obj:null};
+    //    // instructions[instructions.length-1].push(i);
+
+    // },
+
+    // M106: function(args) {
+
+    //   var itext = (args.s !== undefined) ? " S"+args.s : "";
+    //   var i = {
+    //     text: "M106 "+itext, 
+    //     desc: "Turn Fan On",
+    //     type:"M106",
+    //     ext: extruder_value,
+    //     coord: {x:lastLine.x, y:lastLine.y, z:lastLine.z},
+    //     obj:null};
+    //     //instructions[instructions.length-1].push(i);
+
+    // },
+
+    // M107: function(args) {
+
+    //   var itext = (args.s !== undefined) ? " S"+args.s : "";
+    //   var i = {
+    //     text: "M107",
+    //     desc: "Fan Off (Deprecated)",
+    //     type:"M107",
+    //     ext: extruder_value,
+    //     coord: {x:lastLine.x, y:lastLine.y, z:lastLine.z},
+    //     obj:null};
+    //     //instructions[instructions.length-1].push(i);
+
+    // },
+
+    // M108: function(args) {
+    //   var itext = (args.s !== undefined) ? "S"+args.s : "";
+    //   var i = {
+    //     text: "M108 "+itext,
+    //     desc: "Set Extruder Motor Speed to S (deprecated)",
+    //     type:"M108",
+    //     ext: false,
+    //     coord: {x:lastLine.x, y:lastLine.y, z:lastLine.z},
+    //     obj:null};
+    //     //instructions[instructions.length-1].push(i);
+
+    //     //I'm going to assume that this turns the extruder off
+    //     //if(args.s !== undefined) extruder_value = args.s/210;
+    //     extruder_value = false;
+
+    // },
+    // M109: function(args) {
+    //   var i = {
+    //     text: "M109",
+    //     desc: "Set Extruder Temperature and Wait", 
+    //     type:"M109",
+    //     ext: false,
+    //     coord: {x:lastLine.x, y:lastLine.y, z:lastLine.z},
+    //     obj:null};
+    //     //instructions[instructions.length-1].push(i);
+
+    // },
 
 
-    M140: function(args) {
-      // Example: M140 S55
-      //Set the temperature of the build bed to 55oC and return control to the host immediately (i.e. before that temperature has been reached by the bed).
-      var itext = (args.s !== undefined) ? "S"+args.s : "";
-      var i = {
-        text: "M140 "+itext,
-        desc: "Set Temperature of Bed to S (Celcius) and return control before it gets to that temp",
-        type:"M140",
-        ext: extruder_value,
-        coord: {x:lastLine.x, y:lastLine.y, z:lastLine.z},
-        obj:null};
-        instructions[instructions.length-1].push(i);
+    // M113: function(args) {
+    //   var itext = (args.s !== undefined) ? "S"+args.s : "";
+    //   var i = {
+    //     text: "M113 "+itext,
+    //     desc: "Set Extruder PWM to S (.1 = 10%)",
+    //     type:"M113",
+    //     ext: true,
+    //     coord: {x:lastLine.x, y:lastLine.y, z:lastLine.z},
+    //     obj:null};
+    //     //instructions[instructions.length-1].push(i);
 
-    },
+    //     extruder_value = true;
+    // },
 
 
-    M141: function(args) {
-      var itext = (args.s !== undefined) ? "S"+args.s : "";
-      var i = {
-        text: "M141 "+itext,
-        desc: "Set Temperature of Chamber to S (Celcius) and return control before it gets to that temp",
-        type:"M141",
-        ext: extruder_value,
-        coord: {x:lastLine.x, y:lastLine.y, z:lastLine.z},
-        obj:null};
-        instructions[instructions.length-1].push(i);
+    // M140: function(args) {
+    //   // Example: M140 S55
+    //   //Set the temperature of the build bed to 55oC and return control to the host immediately (i.e. before that temperature has been reached by the bed).
+    //   var itext = (args.s !== undefined) ? "S"+args.s : "";
+    //   var i = {
+    //     text: "M140 "+itext,
+    //     desc: "Set Temperature of Bed to S (Celcius) and return control before it gets to that temp",
+    //     type:"M140",
+    //     ext: extruder_value,
+    //     coord: {x:lastLine.x, y:lastLine.y, z:lastLine.z},
+    //     obj:null};
+    //     //instructions[instructions.length-1].push(i);
 
-    },
+    // },
 
-    M142: function(args) {
-      var itext = (args.s !== undefined) ? "S"+args.s : "";
-      var i = {
-        text: "M142 "+itext,
-        desc: "Set Holding Pressure of Bed to S (bars)",
-        type:"M142",
-        ext: extruder_value,
-        coord: {x:lastLine.x, y:lastLine.y, z:lastLine.z},
-        obj:null};
-        instructions[instructions.length-1].push(i);
 
-    },
+    // M141: function(args) {
+    //   var itext = (args.s !== undefined) ? "S"+args.s : "";
+    //   var i = {
+    //     text: "M141 "+itext,
+    //     desc: "Set Temperature of Chamber to S (Celcius) and return control before it gets to that temp",
+    //     type:"M141",
+    //     ext: extruder_value,
+    //     coord: {x:lastLine.x, y:lastLine.y, z:lastLine.z},
+    //     obj:null};
+    //     //instructions[instructions.length-1].push(i);
+
+    // },
+
+    // M142: function(args) {
+    //   var itext = (args.s !== undefined) ? "S"+args.s : "";
+    //   var i = {
+    //     text: "M142 "+itext,
+    //     desc: "Set Holding Pressure of Bed to S (bars)",
+    //     type:"M142",
+    //     ext: extruder_value,
+    //     coord: {x:lastLine.x, y:lastLine.y, z:lastLine.z},
+    //     obj:null};
+    //     //instructions[instructions.length-1].push(i);
+
+    // },
     'default': function(args, info) {
-      console.error('Unknown command:', args.cmd, args, info);
+      //console.error('Unknown command:', args.cmd, args, info);
     },
   });
 
@@ -428,29 +434,13 @@ function createGeometryFromGCode(gcode) {
 
  for(var l in instructions){
     for(var i in instructions[l]){
-      instructions[l][i].coord.y = instructions[l][i].coord.y * -1;
-      //console.log(instructions[l][i]);
+      instructions[l][i].to.y *= -1;
     }
   }
 
 
 
   raw_flavor = new outputFlavor(instructions, material_size, material_size, angle, true, -1, 10, -1, -1);
-
-  console.log("in model, layer max "+raw_flavor.is.length);
-  $("#maxLayer").text(raw_flavor.is.length);
-  document.getElementById("layerRange").max = raw_flavor.is.length-1;
-
- $("#maxInst").text(raw_flavor.is[0].length);
-  document.getElementById("instRange").max = raw_flavor.is[0].length-1;
-
-  $("#force_height").val(raw_flavor.material_height);
-  $("#force_angle").val(raw_flavor.laser_to_center);
-  $("#default_height").html(raw_flavor.material_height);
-  $("#force_halfangle").val(raw_flavor.half_angle);
-  $("#force_distance").val(raw_flavor.laser.z);
-  $("#layer_min").val(0);
-  $("#layer_max").val(raw_flavor.is.length);
   select_flavor = new outputFlavor(instructions.slice(0), material_size, material_size, angle, render_raw, raw_flavor.laser.z, raw_flavor.half_angle, 0, raw_flavor.is.length);
 
 }

@@ -28,7 +28,8 @@ var app = {
     macAddress:undefined,
     chars:"",
     view: "2d",
-    has_bt: false,  
+    has_bt: false,
+    all_layers: true,  
 
     // Application Constructor
     initialize: function() {
@@ -53,49 +54,38 @@ var app = {
         ui.init();
 
 
+        var lastImported = localStorage.getItem('last-imported');
+        var lastLoaded = localStorage.getItem('last-loaded');
+        var lastFilename = localStorage.getItem('last-filename');
 
 
-        if(app.has_bt){
-
-            function fail(){
-                ui.serial("fail");
-            }
-            ui.serial("init has bluetooth");
-            window.requestFileSystem(LocalFileSystem.PERSISTENT, 0, function(fileSystem){
-               ui.serial("has file system");
-               ui.serial("name "+fileSystem.root.name);
-               fileSystem.root.getDirectory("../BTM.app/www/", {create: true}, function(entry) { 
-                  ui.serial("got directory");
-
-                  entry.getFile("index.html", {create: false}, function(fileEntry) {
-                     ui.serial("got file");
-
-                     fileEntry.file(function(file){
-                        var reader = new FileReader();
-                        reader.onloadend = function(evt) {
-                           ui.serial(evt.target.result);
-                        };
-                        reader.readAsText(file);             
-                     }, fail);
-                  }, fail);
-               });
-            }, fail);
-        }
-        
-
-        function loadFile(){
-            app.lastImported = localStorage.getItem('last-imported');
-            app.lastLoaded = localStorage.getItem('last-loaded');
-            app.lastFilename = localStorage.getItem('last-filename');
-
-            if (app.lastImported) {
-                app.openGCodeFromText(app.lastFilename, app.lastImported);
-            } else {
-               app.openGCodeFromPath('gcode/hand.gcode');
-            }
+        if (lastImported) {
+          app.openGCodeFromText(lastFilename, lastImported);
+        } else {
+          app.openGCodeFromText("hand.gcode", gcode);
+  
+         //openGCodeFromPath(lastLoaded || 'examples/octocat.gcode');
         }
 
-        loadFile();
+         // Drop files from desktop onto main page to import them.
+        $('body').on('dragover', function(event) {
+            event.stopPropagation();
+            event.preventDefault();
+            event.originalEvent.dataTransfer.dropEffect = 'copy'
+          }).on('drop', function(event) {
+            event.stopPropagation();
+            event.preventDefault();
+            var files = event.originalEvent.dataTransfer.files;
+            if (files.length > 0) {
+              var reader = new FileReader();
+              reader.onload = function() {
+                app.openGCodeFromText(files[0].name, reader.result);
+                d2.add(select_flavor);
+                d3.add(select_flavor.object);
+              };
+              reader.readAsText(files[0]);
+            }
+         });
 
         //make sure to set up the graphics after the file has been loaded
         d2.init(ui.div_2d);
@@ -107,7 +97,6 @@ var app = {
         d3.setControls(false);
 
         if(!app.hasGL) ui.glError();
-
 
     },
 
@@ -173,9 +162,9 @@ var app = {
       console.log("opening from text", name);  
         createGeometryFromGCode(gcode);
              
-      // app.localStorage.setItem('last-imported', gcode);
-      // app.localStorage.setItem('last-filename', name);
-      // app.localStorage.removeItem('last-loaded');
+      localStorage.setItem('last-imported', gcode);
+      localStorage.setItem('last-filename', name);
+      localStorage.removeItem('last-loaded');
     }
 
 };

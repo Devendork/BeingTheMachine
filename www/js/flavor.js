@@ -20,32 +20,6 @@ function outputFlavor(instructions, diameter, height, laser_to_center, raw, dist
     }
 
 
-   // //go through and delete instructions
-    // for(var i = 0;  i < 1869; i++){
-    //   this.is[6].pop();
-    // }
-
-    //  for(var i = 0;  i < 1243; i++){
-    //   this.is[8].pop();
-    // }
-
-    //     for(var i = 0;  i < 367; i++){
-    //   this.is[12].pop();
-    //}
-    // //go through and delete instructions
-    // for(var i = 0;  i < 1535; i++){
-    //   this.is[8].pop();
-    // }
-
-    // for(var i = 0;  i < 1538; i++){
-    //   this.is[10].pop();
-    // }
-
-
-    // for(var i = 0;  i < 488; i++){
-    //   this.is[16].pop();
-    // }
-
     //MATERIAL PARAMS
     this.diameter = diameter;                   // material diameter
     this.material_height = height;              // material height
@@ -86,6 +60,22 @@ function outputFlavor(instructions, diameter, height, laser_to_center, raw, dist
     //RENDER PARAMS
     this.object = this.createObjectFromInstructions(this.is);
     //this.createLaser(this.laser);
+
+
+  console.log("in model, layer max "+this.is.length);
+  $("#maxLayer").text(this.is.length);
+  document.getElementById("layerRange").max = this.is.length-1;
+
+ $("#maxInst").text(this.is[0].length);
+  document.getElementById("instRange").max = this.is[0].length-1;
+
+  $("#force_height").val(this.material_height);
+  $("#force_angle").val(this.laser_to_center);
+  $("#default_height").html(this.material_height);
+  $("#force_halfangle").val(this.half_angle);
+  $("#force_distance").val(this.laser.z);
+  $("#layer_min").val(0);
+  $("#layer_max").val(this.is.length);
 }
 
 outputFlavor.prototype.is = [];
@@ -109,11 +99,11 @@ outputFlavor.prototype.range = undefined;
 //   for(var l in this.is){
 //     for(var i in this.is[l]){
 //       inst = this.is[l][i];
-//       var adj_height = this.env.distance_to_base - inst.coord.z;
-//       var dy = inst.coord.y - this.bbox.min.y;
+//       var adj_height = this.env.distance_to_base - inst.from.z;
+//       var dy = inst.from.y - this.bbox.min.y;
 //       var y_new_min = adj_height*Math.atan(t_diff) + this.bbox.ctr.y;
 //       var new_y = y_new_min + dy;
-//       this.is[l][i].coord.y = new_y;
+//       this.is[l][i].from.y = new_y;
 //     }
 //   }
    
@@ -133,7 +123,7 @@ outputFlavor.prototype.updateInstructionHeights = function(){
   for(var l in this.is){
     for(var i in this.is[l]){
       inst = this.is[l][i];
-      inst.coord.z = l * this.material_height;
+      inst.z = l * this.material_height;
     }
   }
 } 
@@ -144,7 +134,7 @@ outputFlavor.prototype.updateInstructionOffsets = function(){
   for(var l in this.is){
     for(var i in this.is[l]){
       inst = this.is[l][i];
-      inst.coord.y += this.laser_to_center; //+ moves down
+      inst.to.y += this.laser_to_center; //+ moves down
     }
   }
 
@@ -153,6 +143,7 @@ outputFlavor.prototype.updateInstructionOffsets = function(){
   this.bbox.ctr.y += this.laser_to_center;
 
   var adj_height = this.laser.z - this.bbox.max.z;
+
   var theta = {
       min: rad_to_deg(Math.atan((this.bbox.min.y - this.laser.y)/adj_height)) +  90,
       max: rad_to_deg(Math.atan((this.bbox.max.y - this.laser.y)/adj_height)) +  90.
@@ -170,25 +161,21 @@ outputFlavor.prototype.arduinoInstructions = function(){
   for(var l in this.is){
       a_is.push([]);
       for(var i in this.is[l]){
-        var inst = this.is[l][i];   
+        var inst = this.is[l][i];
+        var ai = {
+          id: inst.id,
+          z: inst.z,
+          to: inst.to,
+          ext: inst.ext
+        };  
        
+        inst.microseconds = this.toMicroseconds(l, inst.to.x, inst.to.y, inst.z);
+        ai.microseconds = inst.microseconds;
+        ai.to = this.fromMicroseconds(l, inst.microseconds.x, inst.microseconds.y);
+        ai.z = l * this.material_height;
 
-       if(inst.type == "G1"){ 
-         var ai = {
-            text: inst.text,
-            desc: inst.desc, 
-            type: inst.type,
-            coord: {x: inst.coord.x, y:inst.coord.y, z:inst.coord.z},
-            ext: inst.ext,
-            obj: inst.obj
-          };
-        
-          inst.obj.microseconds = this.toMicroseconds(l, inst.coord.x, inst.coord.y, inst.coord.z);
-          ai.coord = this.fromMicroseconds(l, inst.obj.microseconds.x, inst.obj.microseconds.y);
-          ai.coord.z = l * this.material_height;
-
-          a_is[l].push(ai);
-         }
+        a_is[l].push(ai);
+         
       }
   }
   return this.cleanInstructions(a_is);
@@ -200,15 +187,13 @@ outputFlavor.prototype.boundingBox = function(){
   for(var l in this.is){
     for(var i in this.is[l]){
       inst = this.is[l][i];
-      if(inst.type == "G1" && inst.ext){
-  
-      bbox.min.x = Math.min(bbox.min.x, inst.coord.x);
-      bbox.min.y = Math.min(bbox.min.y, inst.coord.y);
-      bbox.min.z = Math.min(bbox.min.z, inst.coord.z);
-      bbox.max.x = Math.max(bbox.max.x, inst.coord.x);
-      bbox.max.y = Math.max(bbox.max.y, inst.coord.y);
-      bbox.max.z = Math.max(bbox.max.z, inst.coord.z);
-
+      if(inst.ext){
+        bbox.min.x = Math.min(bbox.min.x, inst.to.x);
+        bbox.min.y = Math.min(bbox.min.y, inst.to.y);
+        bbox.min.z = Math.min(bbox.min.z, inst.z);
+        bbox.max.x = Math.max(bbox.max.x, inst.to.x);
+        bbox.max.y = Math.max(bbox.max.y, inst.to.y);
+        bbox.max.z = Math.max(bbox.max.z, inst.z);
       }
     }
   }
@@ -216,8 +201,8 @@ outputFlavor.prototype.boundingBox = function(){
   for(var l in this.is){
     for(var i in this.is[l]){
       inst = this.is[l][i];
-      if(inst.coord.x == null) inst.coord.x = bbox.min.x; 
-      if(inst.coord.y == null) inst.coord.y = bbox.min.y; 
+      if(inst.to.x == null) inst.to.x = bbox.min.x; 
+      if(inst.to.y == null) inst.to.y = bbox.min.y; 
     }
   }
 
@@ -251,13 +236,11 @@ outputFlavor.prototype.cleanInstructions = function(a_is){
     var path = [];
     var inst = undefined;
     for(var i in a_is[l]){
-      inst = a_is[l][i];
+       inst = a_is[l][i];
       
-      if(inst.type == "G1"){
         if(last != undefined){
           
-           
-          if(inst.obj.microseconds.x == last.obj.microseconds.x && inst.obj.microseconds.y == last.obj.microseconds.y  && inst.ext == last.ext){
+          if(inst.microseconds.x == last.microseconds.x && inst.microseconds.y == last.microseconds.y  && inst.ext == last.ext){
           
            }else if(!inst.ext && !last.ext){
           
@@ -269,7 +252,7 @@ outputFlavor.prototype.cleanInstructions = function(a_is){
         }
          
         last = inst;
-        }
+        
 
       }
 
@@ -281,79 +264,94 @@ outputFlavor.prototype.cleanInstructions = function(a_is){
 
 
 outputFlavor.prototype.createObjectFromInstructions = function(instructions) {
-  console.log("create object ", this.material_height);
   var layers = [];
   var layer = undefined;
   var bbox = this.bbox;
+  var i_num = 0;
 
-  function newLayer(z) {
-    layer = { type: {}, layer: layers.length, z: z};
+  function newLayer() {
+    layer = { type: {}, layer: layers.length};
     layers.push(layer);
   }
 
-  function getLineGroup(i, line){
+  function getLineGroup(){
+    //lets pretend there is just one type
 
-    if(layer == undefined) newLayer(line);	
-    var grouptype = (i.ext ? 10000 : 0) + i.speed;
-    var color = new THREE.Color(i.ext ? 0x000000: 0x0000ff);
+    if(layer == undefined) newLayer();	
+    var grouptype = 0;
+    //var color = new THREE.Color("rgb("+(layer.layer * 10)+", 0, 0)");
+    var color = new THREE.Color(0x555555);
+
     if (layer.type[grouptype] == undefined) {
       layer.type[grouptype] = {
-        type: grouptype,
-        feed: i.obj.d_extruding,	
-        feed: true,
-        extruding: i.ext,
         color: color,
         segmentCount: 0,
         material: new THREE.LineBasicMaterial({
           opacity:0.5,
           transparent:true,
-          linewidth:5,
+          linewidth:2,
           vertexColors: THREE.FaceColors }),
           geometry: new THREE.Geometry(),
       }
     }
+
     return layer.type[grouptype];
   }
-  function addSegment(i, p1, p2) {
-    var group = getLineGroup(i, p2);
+
+  function addSegment(last, inst) {
+    var group = getLineGroup();
     var geometry = group.geometry;
 
+    // var geometry = new THREE.Geometry();
+    // geometry.name = i_num++;
 
-    group.segmentCount++;
-    geometry.vertices.push(new THREE.Vector3(p1.x, p1.y, -p1.z));
-    geometry.vertices.push(new THREE.Vector3(p2.x, p2.y, -p2.z));
+    // //group.segmentCount++;
+    // geometry.vertices.push(new THREE.Vector3(p1.x, p1.y, -p1.z));
+    // geometry.vertices.push(new THREE.Vector3(p2.x, p2.y, -p2.z));
+    // geometry.colors.push(group.color);
+    // geometry.colors.push(group.color);
+
+    // var material = new THREE.LineBasicMaterial({
+    //       opacity:0.5,
+    //       transparent:true,
+    //       linewidth:2,
+    //       vertexColors: THREE.FaceColors });
+
+    // var line = new THREE.Line(geometry, material, THREE.LinePieces);
+    // object.add(line);
+
+
+    geometry.vertices.push(new THREE.Vector3(last.to.x, last.to.y, -last.z)); //where it is
+    geometry.vertices.push(new THREE.Vector3(inst.to.x, inst.to.y, -inst.z)); //where it went
     geometry.colors.push(group.color);
     geometry.colors.push(group.color);
   }
 
+  var object = new THREE.Object3D();
+  object.name = "model";
+
+  var last = undefined;
+  var inst;
   for(var l in instructions){
     if(instructions[l].length > 0){
-      newLayer(instructions[l][instructions[l].length-1].coord); 
-      var last = undefined;
-      var inst;
+      newLayer(); 
       for(var i in instructions[l]){
         inst = instructions[l][i];
-        if(last != undefined){
-          var p1 = last.coord; //where it's at
-          var p2 = inst.coord; //where it's going once the instruction executes
-
-          if(last.ext && inst.type == "G1") addSegment(inst, p1, p2);
-        }
+        if(last !== undefined && inst.ext) addSegment(last, inst);
         last = inst;
       }
     }
   }
 
-  console.log("Layer Count ", layers.length);
 
-  var object = new THREE.Object3D();
-  object.name = "model";
+
 
   for (var lid in layers) {
     var layer = layers[lid];
     for (var tid in layer.type) {
       var type = layer.type[tid];
       var line = new THREE.Line(type.geometry, type.material, THREE.LinePieces);
+      line.name = layer.layer;
       line.name = lid;
       object.add(line);
     }
@@ -372,7 +370,6 @@ outputFlavor.prototype.createObjectFromInstructions = function(instructions) {
   );
 
   center.add(min);
-  console.log(center);
 
   object.position = center.multiplyScalar(-1); //center this model
   object.add(this.createPlane());
@@ -403,7 +400,7 @@ outputFlavor.prototype.createPlane = function (instructions){
   var info_obj = new THREE.Object3D();
   info_obj.name = "model_info"
 
-  var material = new THREE.MeshBasicMaterial( {color: "#005B66", side: THREE.DoubleSide} );
+  var material = new THREE.MeshBasicMaterial( {color: "#CCCCFF", side: THREE.DoubleSide} );
   // material.transparent = true;
   // material.opacity = 0.7;
   var geometry = new THREE.PlaneGeometry(bbox.max.x - bbox.min.x, bbox.max.y - bbox.min.y);
@@ -551,11 +548,11 @@ outputFlavor.prototype.fromMicroseconds = function(layer_id,x, y){
     y: (y - 600) /ms_per_theta 
   };
 
-  var coord = {
+  var to = {
     x: adj_height * Math.tan(deg_to_rad(theta.x - 90)) + this.laser.x,
     y: adj_height * Math.tan(deg_to_rad(theta.y - 90)) + this.laser.y
   }
 
-  return coord;  
+  return to;  
 }
 

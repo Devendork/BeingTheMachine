@@ -82,7 +82,7 @@
   
   <ons-sliding-menu
     var="app.menu"
-    menu-page="menu.html" main-page="page1.html" side="left"
+    menu-page="menu.html" main-page="d2.html" side="left"
     max-slide-distance="260px" swipeable="true" type="reveal">
   </ons-sliding-menu>
 
@@ -113,22 +113,30 @@
 
 
        <ons-list class="bottom-menu-list">
-        <ons-list-item class="bottom-menu-item" ng-click="app.menu.setMainPage('page2.html', {closeMenu: true})">
+        <!-- <ons-list-item class="bottom-menu-item" ng-click="app.menu.setMainPage('options.html', {closeMenu: true})"> -->
+<!--         <ons-list-item class="bottom-menu-item" ng-click="app.menu.setMainPage('options.html', {closeMenu: true})">      
           Options
-        </ons-list-item>
+        </ons-list-item> -->
+  <ons-list class="bottom-menu-list">
+    <ons-list-item class="list__item"> Render All Layers
+      <label class="switch switch--list-item">
+      <input id="render_layers" type="checkbox" class="switch__input" checked>
+      <div class="switch__toggle"></div>
+    </label>
+ </ons-list-item>
 
-        <ons-list-item class="bottom-menu-item" ng-click="menu.setMainPage('page1.html', {closeMenu: true})">
+<!--         <ons-list-item class="bottom-menu-item" ng-click="menu.setMainPage('page1.html', {closeMenu: true})">
           Load New Model
-        </ons-list-item>
+        </ons-list-item> -->
 
-        <ons-list-item class="bottom-menu-item" ng-click="app.menu.setMainPage('page2.html', {closeMenu: true})">
+<!--         <ons-list-item class="bottom-menu-item" ng-click="app.menu.setMainPage('page2.html', {closeMenu: true})">
           Send feedback
-        </ons-list-item>
+        </ons-list-item> -->
       </ons-list> 
     </ons-page>
   </ons-template>
 
-  <ons-template id="page1.html">
+  <ons-template id="d2.html">
     <ons-page>
       <ons-toolbar>
         <div class="left">
@@ -180,8 +188,6 @@
         
 
           </ons-row>
-
-
       </ons-bottom-toolbar>
 
       <div id="bluetooth_alert">
@@ -195,6 +201,8 @@
           </div>
         </div>
       </div>
+
+
 
 <!--       <div id="file_alert">
       <div class="alert-dialog-mask"></div>
@@ -211,6 +219,8 @@
     </ons-page>
   </ons-template>
 
+
+
  
 </body>
 </html>
@@ -221,6 +231,7 @@
 <script src="js/TrackballControls.js"></script>
 <script type="text/javascript"src="js/svg.min.js"></script>
 <!-- Custom code -->
+<script type="text/javascript"src="js/gcode.js"></script>
 <script type="text/javascript"src="js/detector.js"></script>
 <script type="text/javascript"src="js/gcode-parser.js"></script>
 <script type="text/javascript"src="js/gcode-model.js"></script>
