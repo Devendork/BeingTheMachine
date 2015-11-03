@@ -33,6 +33,8 @@ var ui = {
 
     var render_layers = $("#render_layers");
 
+    var but_camera = $("#camera");
+
     var but_increment = $("#increment");
     var but_decrement = $("#decrement");
     var but_bt_close = $("#bt_close_select");
@@ -81,6 +83,68 @@ var ui = {
         d2.prevStep();
       }
 
+    });
+
+    but_camera.click(function(){
+      ui.serial("click photo");
+      if(navigator.camera !== undefined){
+      navigator.camera.getPicture(onSuccess, onFail, { quality: 50,
+            destinationType: Camera.DestinationType.FILE_URI });
+      }else{
+          var sampleValues = [];
+          for(var i = 0; i < 5; i++){
+              sampleValues[i] = Math.floor(Math.random()*255);
+          }
+          generateModel(sampleValues);
+      }
+
+      function onSuccess(imageURI) {
+          // var image = document.getElementById('myImage');
+          // image.src = imageURI;
+          // ui.serial(image.src);
+          // ui.serial(image.width);
+
+          function sampleImageForModel() {
+              //alert("'" + this.name + "' is " + this.width + " by " + this.height + " pixels in size.");
+              var canvas = document.createElement('canvas');
+              canvas.width = this.width;
+              canvas.height = this.height;
+              canvas.getContext('2d').drawImage(this, 0, 0, this.width, this.height);
+
+              var samplePoints = [0, this.height/4., this.height/2., 3*this.height/4., this.height-1];
+              var sampleValues = [];
+
+              for(var i = 0; i < samplePoints.length; i++){
+                 var pixelData = canvas.getContext('2d').getImageData(0, samplePoints[i], 1, 1).data;
+                 ui.serial("index: "+samplePoints[i]);
+                 sampleValues[i] = (pixelData[0]+pixelData[0]+pixelData[0])/3;
+                 ui.serial("data: "+sampleValues[i]);
+              }
+
+              generateModel(sampleValues);
+              // var pixelData = canvas.getContext('2d').getImageData(10, 10, 1, 1).data;
+              // ui.serial(pixelData[0]);
+              // console.log(pixelData);
+              return true;
+          }
+          function loadFailure() {
+              alert("'" + this.name + "' failed to load.");
+              return true;
+          }
+
+          var myImage = new Image();
+          myImage.name = "model.jpg";
+          myImage.onload = sampleImageForModel;
+          myImage.onerror = loadFailure;
+          myImage.src = imageURI;
+
+
+      }
+
+
+      function onFail(message) {
+          alert('Failed because: ' + message);
+      }
     });
 
     //figure out how to use touch start /end for equivalent
@@ -230,6 +294,7 @@ var ui = {
   },
 
   serial: function(message){
+    console.log(message);
     ui.div_serial.prepend($('<div></div>')
       .addClass("serialLine")
       .text(message)

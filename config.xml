@@ -2,7 +2,7 @@
 <widget id="com.example.hello" version="0.0.1" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
     <name>BTM</name>
     <description>
-       	A simple app to test if serial is working or not
+       	An app for fabrication En Plein Air. Generates 3D models from images of the environment and then guides the user to produce those models by hand. 
     </description>
     <author email="ldevendorf@gmail.com" href="http://beingthemachine.com">
         Laua Devendorf
@@ -12,4 +12,9 @@
     <preference name="orientation" value="landscape" />
     <preference name="fullscreen" value="false" />
     <preference name="webviewbounce" value="true" />
+
+    <feature name="Camera">
+        <param name="android-package" value="org.apache.cordova.camera.CameraLauncher" />
+    </feature>
+
 </widget>
