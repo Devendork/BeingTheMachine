@@ -115,7 +115,7 @@ var ui = {
               var sampleValues = [];
 
               for(var i = 0; i < samplePoints.length; i++){
-                 var pixelData = canvas.getContext('2d').getImageData(0, samplePoints[i], 1, 1).data;
+                 var pixelData = canvas.getContext('2d').getImageData(this.width/2, samplePoints[i], 1, 1).data;
                  ui.serial("index: "+samplePoints[i]);
                  sampleValues[i] = (pixelData[0]+pixelData[0]+pixelData[0])/3;
                  sampleValues[i] /= 255; //convert to floating poitn value

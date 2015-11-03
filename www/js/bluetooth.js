@@ -191,9 +191,9 @@ var bt = {
                     var bounds = computeArduinoBounds();
                     data = "i "+bounds.x.min+" "+bounds.x.max+" "+bounds.y.min+" "+bounds.y.max;
                 }
+                bluetoothSerial.write(data+'\n', success, failure);
 
             } 
-            bluetoothSerial.write(data+'\n', success, failure);
 	        //else ui.serial("<- " + data);
 	    }
     },

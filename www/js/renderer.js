@@ -9,6 +9,8 @@ var d2 = {
 	all_layers:false,
 	step_counts:[],
 	total_steps:0,
+	profile: null,
+	image:null,
 	//line:null,
 	ptr: {
 		layer: 0, //layer id
@@ -25,6 +27,9 @@ var d2 = {
 
 		d2.draw = SVG('renderArea2d');
 		d2.group = d2.draw.group();
+
+
+
 
 	},
 
@@ -132,7 +137,10 @@ var d2 = {
 		return pl;	
 	},
 
-
+	addImage:function(path){
+		var image = d2.group.image(path);
+        image.size(650, 650).y(-50)
+	},
 
 	add: function(){
 		d2.ebbox = select_flavor.bbox;
