@@ -9,6 +9,7 @@
     </author>
     <content src="index.html" />
     <access origin="*" />
+    <preference name="orientation" value="landscape" />
     <preference name="fullscreen" value="false" />
     <preference name="webviewbounce" value="true" />
 </widget>

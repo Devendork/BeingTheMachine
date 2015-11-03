@@ -441,7 +441,7 @@ function createGeometryFromGCode(gcode) {
 
 
   raw_flavor = new outputFlavor(instructions, material_size, material_size, angle, true, -1, 10, -1, -1);
-  select_flavor = new outputFlavor(instructions.slice(0), material_size, material_size, angle, render_raw, raw_flavor.laser.z, raw_flavor.half_angle, 0, raw_flavor.is.length);
+  select_flavor = new outputFlavor(instructions.slice(0), material_size, material_size, angle, render_raw, -1, 30, 0, raw_flavor.is.length);
 
 }
 
@@ -475,144 +475,144 @@ function deg_to_rad(x){
 }
 
 
-function getSDInstructions(){
-  var flavor = select_flavor;
-  var ilist = [];
-  var last = {x:flavor.bbox.min.x, y:flavor.bbox.min.y,z:flavor.bbox.min.z,  ext:false};
+// function getSDInstructions(){
+//   var flavor = select_flavor;
+//   var ilist = [];
+//   var last = {x:flavor.bbox.min.x, y:flavor.bbox.min.y,z:flavor.bbox.min.z,  ext:false};
   
-  ilist.push("h"+select_flavor.half_angle);
+//   ilist.push("h"+select_flavor.half_angle);
 
 
-  var bx = [flavor.bbox.min.x, flavor.bbox.max.x, flavor.bbox.max.x, flavor.bbox.min.x];
-  var by = [flavor.bbox.min.y, flavor.bbox.min.y, flavor.bbox.max.y, flavor.bbox.max.y];
-  var raw_x;
-  var raw_y;
+//   var bx = [flavor.bbox.min.x, flavor.bbox.max.x, flavor.bbox.max.x, flavor.bbox.min.x];
+//   var by = [flavor.bbox.min.y, flavor.bbox.min.y, flavor.bbox.max.y, flavor.bbox.max.y];
+//   var raw_x;
+//   var raw_y;
 
-  console.log("bounding box");
-    console.log(bx);
-  for(var i in bx){
-    var ms  = select_flavor.toMicroseconds(0, bx[i], by[i], flavor.bbox.max.z);
-    bx[i] = ms.x;
-    by[i] = ms.y;
-    console.log(ms);
-  }
+//   console.log("bounding box");
+//     console.log(bx);
+//   for(var i in bx){
+//     var ms  = select_flavor.toMicroseconds(0, bx[i], by[i], flavor.bbox.max.z);
+//     bx[i] = ms.x;
+//     by[i] = ms.y;
+//     console.log(ms);
+//   }
 
-  ilist.push("x"+bx.join());
-  ilist.push("y"+by.join());
+//   ilist.push("x"+bx.join());
+//   ilist.push("y"+by.join());
 
-  var i_count = 0;
-  var layer_count = 0;
+//   var i_count = 0;
+//   var layer_count = 0;
 
-  //go through and make the instructions
-  for(var l in flavor.a_is){
-      for(var i in flavor.a_is[l]){
-        var inst = flavor.a_is[l][i];
+//   //go through and make the instructions
+//   for(var l in flavor.a_is){
+//       for(var i in flavor.a_is[l]){
+//         var inst = flavor.a_is[l][i];
           
-          raw_x = inst.obj.microseconds.x;
-          raw_y = inst.obj.microseconds.y;
+//           raw_x = inst.obj.microseconds.x;
+//           raw_y = inst.obj.microseconds.y;
 
           
-          if(last.ext == true) ilist.push("g"+i_count+","+raw_x+","+raw_y);
-          else ilist.push("p"+i_count+","+raw_x+","+raw_y);
+//           if(last.ext == true) ilist.push("g"+i_count+","+raw_x+","+raw_y);
+//           else ilist.push("p"+i_count+","+raw_x+","+raw_y);
           
-          last.ext = inst.ext; 
-          i_count++;
-        }
-      layer_count++;
-    ilist.push("l"+layer_count+","+raw_x+","+raw_y);
-  }
-   return ilist;
-}
+//           last.ext = inst.ext; 
+//           i_count++;
+//         }
+//       layer_count++;
+//     ilist.push("l"+layer_count+","+raw_x+","+raw_y);
+//   }
+//    return ilist;
+// }
 
-function createArduinoInstructions(){
-  var flavor = select_flavor;
-  var last = {x:flavor.bbox.min.x, y:flavor.bbox.min.y,z:flavor.bbox.min.z,  ext:false};
-  var min_ms = 1500 - select_flavor.half_angle*10;
-  var ilist = {
-    ls:[],
-    msx:[],
-    msy:[],
-    layer_ids:[]};
+// function createArduinoInstructions(){
+//   var flavor = select_flavor;
+//   var last = {x:flavor.bbox.min.x, y:flavor.bbox.min.y,z:flavor.bbox.min.z,  ext:false};
+//   var min_ms = 1500 - select_flavor.half_angle*10;
+//   var ilist = {
+//     ls:[],
+//     msx:[],
+//     msy:[],
+//     layer_ids:[]};
 
 
-  ilist.bx = [flavor.bbox.min.x, flavor.bbox.max.x, flavor.bbox.max.x, flavor.bbox.min.x];
-  ilist.by = [flavor.bbox.min.y, flavor.bbox.min.y, flavor.bbox.max.y, flavor.bbox.max.y];
+//   ilist.bx = [flavor.bbox.min.x, flavor.bbox.max.x, flavor.bbox.max.x, flavor.bbox.min.x];
+//   ilist.by = [flavor.bbox.min.y, flavor.bbox.min.y, flavor.bbox.max.y, flavor.bbox.max.y];
   
-  for(var i in ilist.bx){
-    var ms  = select_flavor.toMicroseconds(0, ilist.bx[i], ilist.by[i]);
-    ilist.bx[i] = ms.x - min_ms;
-    ilist.by[i] = ms.y - min_ms;
-  }
+//   for(var i in ilist.bx){
+//     var ms  = select_flavor.toMicroseconds(0, ilist.bx[i], ilist.by[i]);
+//     ilist.bx[i] = ms.x - min_ms;
+//     ilist.by[i] = ms.y - min_ms;
+//   }
 
-  var i_count = 0;
+//   var i_count = 0;
 
-  //go through and make the instructions
-  for(var l in flavor.a_is){
-    for(var i in flavor.a_is[l]){
-      var inst = flavor.a_is[l][i];
+//   //go through and make the instructions
+//   for(var l in flavor.a_is){
+//     for(var i in flavor.a_is[l]){
+//       var inst = flavor.a_is[l][i];
 
-        i_count++;
-        var raw_x = inst.obj.microseconds.x;
-        var raw_y = inst.obj.microseconds.y;
-        ilist.msx.push(raw_x - min_ms);
-        ilist.msy.push(raw_y - min_ms);
+//         i_count++;
+//         var raw_x = inst.obj.microseconds.x;
+//         var raw_y = inst.obj.microseconds.y;
+//         ilist.msx.push(raw_x - min_ms);
+//         ilist.msy.push(raw_y - min_ms);
         
-        if(last.ext == true){
-          ilist.ls.push(1);
-        }else{
-          ilist.ls.push(0);
-        }
-        last.ext = inst.ext; 
-    }
-    ilist.layer_ids.push(i_count+1); //add 1 since we want the id of the first instruction on the next layer
-  }
-  ilist.layer_ids.push(0); //use this to make sure we don't overshoot the array bounds in arduino
+//         if(last.ext == true){
+//           ilist.ls.push(1);
+//         }else{
+//           ilist.ls.push(0);
+//         }
+//         last.ext = inst.ext; 
+//     }
+//     ilist.layer_ids.push(i_count+1); //add 1 since we want the id of the first instruction on the next layer
+//   }
+//   ilist.layer_ids.push(0); //use this to make sure we don't overshoot the array bounds in arduino
 
-   return ilist;
-}
+//    return ilist;
+// }
 
-function computeArduinoBounds(){
-  var flavor = select_flavor;
-  var min_ms = 1500 - select_flavor.half_angle*10;
-  var bounds = {
-    x: {min: flavor.bbox.min.x, max: flavor.bbox.max.x},
-    y: {min: flavor.bbox.min.y, max: flavor.bbox.max.y},
-  };
+// function computeArduinoBounds(){
+//   var flavor = select_flavor;
+//   var min_ms = 1500 - select_flavor.half_angle*10;
+//   var bounds = {
+//     x: {min: flavor.bbox.min.x, max: flavor.bbox.max.x},
+//     y: {min: flavor.bbox.min.y, max: flavor.bbox.max.y},
+//   };
 
-  var ms_min  = select_flavor.toMicroseconds(0, bounds.x.min, bounds.y.min, flavor.bbox.max.z);
-  var ms_max  = select_flavor.toMicroseconds(0, bounds.x.max, bounds.y.max, flavor.bbox.max.z);
+//   var ms_min  = select_flavor.toMicroseconds(0, bounds.x.min, bounds.y.min, flavor.bbox.max.z);
+//   var ms_max  = select_flavor.toMicroseconds(0, bounds.x.max, bounds.y.max, flavor.bbox.max.z);
 
-  bounds.x = {min: ms_min.x, max: ms_max.x};
-  bounds.y = {min: ms_min.y, max: ms_max.y};
+//   bounds.x = {min: ms_min.x, max: ms_max.x};
+//   bounds.y = {min: ms_min.y, max: ms_max.y};
 
-  return bounds;
-}
+//   return bounds;
+// }
 
   
 
-function getArduinoFile(){
-  var lines = [];
-  var ilist = createArduinoInstructions(); 
-  var env = select_flavor.env;
-  var dist = Math.round(select_flavor.laser.z * 100 ) / 100; 
+// function getArduinoFile(){
+//   var lines = [];
+//   var ilist = createArduinoInstructions(); 
+//   var env = select_flavor.env;
+//   var dist = Math.round(select_flavor.laser.z * 100 ) / 100; 
   
-  console.log("Model Width = "+select_flavor.bbox.dim.x);
-  console.log("Model Height= "+select_flavor.bbox.dim.y);
-  console.log("Dist To Base = "+dist);
-  console.log("Material Height = "+select_flavor.material_height);
-  console.log("Material Diameter = "+select_flavor.diameter);
-  console.log("Model Height"+select_flavor.bbox.dim.z);
+//   console.log("Model Width = "+select_flavor.bbox.dim.x);
+//   console.log("Model Height= "+select_flavor.bbox.dim.y);
+//   console.log("Dist To Base = "+dist);
+//   console.log("Material Height = "+select_flavor.material_height);
+//   console.log("Material Diameter = "+select_flavor.diameter);
+//   console.log("Model Height"+select_flavor.bbox.dim.z);
 
-  lines.push("int inst_num = "+ilist.msx.length+";")
-    lines.push("const PROGMEM uint8_t xs[] = {"+ilist.msx.join(",")+"};")
-    lines.push("const PROGMEM uint8_t ys[] = {"+ilist.msy.join(",")+"};")
-    lines.push("const PROGMEM uint8_t ls[] = {"+ilist.ls.join(",")+"};")
-    lines.push("const PROGMEM uint8_t bx[] = {"+ilist.bx.join(",")+"};")
-    lines.push("const PROGMEM uint8_t by[] = {"+ilist.by.join(",")+"};")
-   lines.push("const PROGMEM uint16_t layers[] = {"+ilist.layer_ids.join(",")+"};")
-  return lines;  
+//   lines.push("int inst_num = "+ilist.msx.length+";")
+//     lines.push("const PROGMEM uint8_t xs[] = {"+ilist.msx.join(",")+"};")
+//     lines.push("const PROGMEM uint8_t ys[] = {"+ilist.msy.join(",")+"};")
+//     lines.push("const PROGMEM uint8_t ls[] = {"+ilist.ls.join(",")+"};")
+//     lines.push("const PROGMEM uint8_t bx[] = {"+ilist.bx.join(",")+"};")
+//     lines.push("const PROGMEM uint8_t by[] = {"+ilist.by.join(",")+"};")
+//    lines.push("const PROGMEM uint16_t layers[] = {"+ilist.layer_ids.join(",")+"};")
+//   return lines;  
 
-  return this;
-}
+//   return this;
+// }
 
 

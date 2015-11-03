@@ -11,14 +11,30 @@ var ui = {
     ui.div_bt_alert = $('#bluetooth_alert');
     ui.div_bt_menu =  $('#bt_menu');    
     ui.div_serial = $('#serialMonitor');
+    ui.but_connect = $("#connect");
 
-    var range_layer = $("#layerRange");
-    var range_inst = $("#instRange");
+    ui.range_layer = $("#layerRange");
+    ui.cur_layer = $("#curLayer");
+    ui.cur_layer.text(1);
+
+    ui.range_layer.prop('min', 1);
+    ui.range_layer.prop('value', 1);
+
+
+    ui.range_inst = $("#instRange");
+    ui.range_inst.prop('min', 1);
+    ui.range_layer.prop('value', 1);
+
+    ui.cur_inst = $("#curInst");
+    ui.cur_inst.text(1);
+
+
+    ui.percent = $("#percent");
+
     var render_layers = $("#render_layers");
 
     var but_increment = $("#increment");
     var but_decrement = $("#decrement");
-    var but_connect = $("#connect");
     var but_bt_close = $("#bt_close_select");
     var but_toggle_view = $("#toggleView");
 
@@ -37,31 +53,33 @@ var ui = {
 
     app.menu.setSwipeable(false);
       
-    render_layers.change(function(){
-      all_layers = this.checked;
+    // render_layers.change(function(){
+    //   all_layers = this.checked;
+    // });
+
+
+    ui.range_layer.change(function(){
+      var i =  parseInt($(this).prop('value'));
+      var id = +i-1;
+      d2.loadLayer(id, true);
+      d3.updateLayer(id); 
+      ui.updateModelStats();
+
     });
 
+    ui.range_inst.change(function(){
+      var i =  parseInt($(this).prop('value'));
+      var id = i-1;
 
-    range_layer.change(function(){
-      var i =  $(this).prop('value');
-      var showValue = +i+1;
-      d2.loadLayer(i);
-      d3.updateLayer(i); 
-      range_inst.prop('max', select_flavor.is[i].length);
-      range_inst.prop('value', 0);
-      bt.sendData('m');
-    });
+      if(id < 0) id = 0;
+      if(id >= d2.step_counts[d2.ptr.layer]) id = d2.step_counts[d2.ptr.layer]-1;
 
-    range_inst.change(function(){
-      var i =  $(this).prop('value');
-      while(d2.step < i){
+      while(d2.ptr.step < id){
         d2.nextStep();
       }
-      while(d2.step > i){
+      while(d2.ptr.step > id){
         d2.prevStep();
       }
-
-      bt.sendData('m'); //move to this step on the arduino
 
     });
 
@@ -98,9 +116,14 @@ var ui = {
     });
   }
     
-    but_connect.click(function(){
-        app.menu.toggle();
-        if(app.has_bt) bt.listPorts();
+  ui.but_connect.click(function(){
+        if(app.has_bt){
+          if(bt.macAddress != undefined) bt.manageConnection();
+          else{
+              app.menu.toggle();
+              bt.listPorts();
+          } 
+        } 
         else{
           var temp = [];
           temp.push({name:"BTM_BT1",address: "00:00:01"});
@@ -140,6 +163,29 @@ var ui = {
     });
 
 
+  },
+
+  updateModelStats:function(){
+      var showLayer = d2.ptr.layer + 1;
+      var showInst = d2.ptr.step +1;
+
+
+      ui.range_layer.prop('max', d2.lines.length);
+      ui.range_layer.prop('value', showLayer);
+      ui.cur_layer.text(showLayer);
+
+      ui.range_inst.prop('max', d2.step_counts[d2.ptr.layer]);
+      ui.range_inst.prop('value', showInst);
+      ui.cur_inst.text(showInst);
+    
+      var steps_taken = 0;
+      for(var i = 0; i < d2.ptr.layer; i++){
+        steps_taken += d2.step_counts[i];
+      }
+      steps_taken += d2.ptr.step;
+
+     var p = Math.floor(steps_taken / d2.total_steps * 100);
+     ui.percent.text(p+"%");
   },
 
   glError:function(){
@@ -184,7 +230,7 @@ var ui = {
   },
 
   serial: function(message){
-    ui.div_serial.append($('<div></div>')
+    ui.div_serial.prepend($('<div></div>')
       .addClass("serialLine")
       .text(message)
     );

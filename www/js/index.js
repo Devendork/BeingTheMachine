@@ -29,7 +29,6 @@ var app = {
     chars:"",
     view: "2d",
     has_bt: false,
-    all_layers: true,  
 
     // Application Constructor
     initialize: function() {
@@ -59,13 +58,13 @@ var app = {
         var lastFilename = localStorage.getItem('last-filename');
 
 
-        if (lastImported) {
-          app.openGCodeFromText(lastFilename, lastImported);
-        } else {
+        // if (lastImported) {
+        //   app.openGCodeFromText(lastFilename, lastImported);
+        // } else {
           app.openGCodeFromText("hand.gcode", gcode);
   
          //openGCodeFromPath(lastLoaded || 'examples/octocat.gcode');
-        }
+        //}
 
          // Drop files from desktop onto main page to import them.
         $('body').on('dragover', function(event) {

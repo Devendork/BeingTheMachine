@@ -6,12 +6,15 @@ var d2 = {
 	scale:1,
 	circle:null,
 	progress:null,
+	all_layers:false,
+	step_counts:[],
+	total_steps:0,
 	//line:null,
 	ptr: {
-		layer: 0,
-		step: 0,
-		polyline: 0,
-		point: 0
+		layer: 0, //layer id
+		step: 0,  // absolute layer position, relative to start
+		polyline: 0, //which polyline it is located in
+		point: 0 //which point within the polyline
 	},
 
 	init:function(element){
@@ -25,8 +28,13 @@ var d2 = {
 
 	},
 
+	checkLayerSteps:function(){
+		console.log(select_flavor.is);
+		console.log(d2.lines);
+	},
+
 	loadLines:function(){
-		console.log("load ghost");
+		// update this function to delete empty lines
 		var last = null;
 		var inst = null;
 		var paths = [];
@@ -54,135 +62,71 @@ var d2 = {
 			}
 		
 		
+
 			var polylines = [];
 			for(var p in paths){
 		 	    var line = {
 		 	   		points: paths[p], //[x, y], [x, y]
 		 	   		svg: d2.createPolyline(true)
-		 	   };
-		 	   polylines.push(line);
+		 		};
+		 	   
+			 	if(line.points.length > 1){
+			 	  line.svg.plot(line.points);
+			 	  polylines.push(line);
+			 	}
 			}
-			d2.lines.push(polylines);
+
+			if(polylines.length > 0) d2.lines.push(polylines);
 		}
+
+		var total = 0;
+		for(var l in d2.lines){
+			d2.step_counts[l] = d2.totalPolylineSteps(d2.lines[l], d2.lines[l].length-1);
+			total += d2.step_counts[l];
+		}
+		d2.total_steps = total;
+
+		ui.updateModelStats();
+
 
 	},
 
 	visited:function(svg){
-		svg.attr({stroke: '#000'});
+		svg.attr({stroke: '#999999'});
 	},
 	ghost: function(svg){
-		svg.attr({stroke: '#999'});
+		svg.attr({stroke: '#99ff66'});
 	},
 
 	plot:function(line, points){
 		line.plot(points);
 	},
 
-	hide:function(svg){
-		svg.remove();
+	// show:function(svg){
+	// 	svg.show();
+	// },
+
+	// hide:function(svg){
+	// 	svg.hide();
+	// },
+
+	hideLayer:function(layer_id){
+		for(var i in d2.lines[layer_id]){
+			d2.lines[layer_id][i].svg.hide();
+		}
 	},
 
-	clearLayerPaths:function(layer_id){
+	removeLayer:function(layer_id){
 		for(var i in d2.lines[layer_id]){
-			d2.hide(d2.lines[layer_id][i].svg);
+			d2.lines[layer_id][i].svg.remove();
 		}
 	},
 
 
-	// addGhostPaths:function(){
-	// 	var last = null;
-	// 	var inst = null;	
-
-	// 	for(var i in select_flavor.is[d2.layer]){
-	// 		inst = select_flavor.is[d2.layer][i];
-	// 		next = d2.getNextInst(d2.layer, i);
-	// 		last = d2.getLastInst(d2.layer, i);
-	    
-	//     if(inst.type == "G1"){
-	// 			d2.addGhostPath(inst, last, next);
-	// 		}
-	// 	}
-		
-	// 	var g_polylist = [];
-	// 	for(var g in d2.ghost_path){
-	// 		g_polylist.push(d2.ghost_path[g].join(" "));
-	// 	}
-
-	// 	//draw them to screen
-	// 	for(var gpl in d2.ghost_polylines){		
-	// 		d2.ghost_polylines[gpl].plot(g_polylist[gpl]);
-	// 	}
-	// },
-
-
-	// addLayerPaths:function(){
-	// 	var last = null;
-	// 	var inst = null;	
-	//   var next = null;
-
-	// 	for(var i in select_flavor.is[d2.layer]){
-	// 		inst = select_flavor.is[d2.layer][i];
-	// 		next = d2.getNextInst(d2.layer, i);
-	// 		last = d2.getLastInst(d2.layer, i);
-	    
-	//     if(inst.type == "G1"){ 
-	// 			d2.addPath(inst, last, next);
-	// 		}	
-	// 	}
-
-	// },
-
-	// addGhostPath: function(inst,last, next){
-	// 	if(inst.type == "G1" && inst.ext){
-	// 		if (last == null || !last.ext){
-	// 			var np = [];
-	// 			np.push(inst.coord.x+","+inst.coord.y);
-	// 			d2.ghost_path.push(np);
-	// 			d2.ghost_polylines.push(d2.createPolyline(true));
-	// 		}
-
-	//     if(next != null){
-	//       d2.ghost_path[d2.ghost_path.length-1].push(next.coord.x+","+next.coord.y);
-	//     }
-
-	// 	}
-
-	// },
-
-	// addPath: function(inst,last,next){
-	// 	if(inst.type == "G1" && inst.ext){
-	// 		if (last == null || !last.ext ||last.coord.z != inst.coord.z){
-	// 			var np = [];
-	// 			np.push(inst.coord.x+","+inst.coord.y);
-	// 			d2.path.push(np);
-	// 			d2.polylines.push(d2.createPolyline(false));
-	// 		}
-
-	//     if(next != null){
-	// 		  d2.path[d2.path.length-1].push(next.coord.x+","+next.coord.y);
-	// 	  }
-	//   }
-
-	// },
-
-	// removePath:function(inst){
-	// 	if(inst.type == "G1" && inst.ext){
-			
-	// 		var last_ndx = d2.path.length -1;
-	// 		var last_coord = d2.path[last_ndx].pop();
-
-	// 		if(d2.path[last_ndx].length == 1){
-	// 			d2.path.pop(); 
-	// 			var pl = d2.polylines.pop();
-	// 			pl.remove();
-	// 		}
-	// 	}
-	// },
-
 	createPolyline:function(ghost){
 		var pl = d2.draw.polyline();
 		if(!ghost) pl.attr({'stroke-width':2/d2.scale, stroke: '#000'});
-		else pl.attr({'stroke-width':2/d2.scale, stroke: '#999'});
+		else pl.attr({'stroke-width':2/d2.scale, stroke: '#99ff66'});
 		pl.fill('none');
 		d2.group.add(pl);
 		return pl;	
@@ -192,7 +136,7 @@ var d2 = {
 
 	add: function(){
 		d2.ebbox = select_flavor.bbox;
-    	d2.step = 0;
+    	//d2.step = 0;
 		d2.layer = 0;
 
 		//scale by bounding box
@@ -231,7 +175,7 @@ var d2 = {
 		
 		//clear all the old paths
 	    for(l in d2.lines){
-			d2.clearLayerPaths(l);
+			d2.removeLayer(l);
 	    }
 	    d2.lines = [];
 
@@ -240,16 +184,11 @@ var d2 = {
 		
 
 		//draw them to the screen
-		if(app.all_layers){
-			for(var l = 0; l < d2.lines.length; l++){
+		if(!d2.all_layers){
+			for(var l = 1; l < d2.lines.length; l++){
 				for(p in d2.lines[l]){
-					d2.plot(d2.lines[l][p].svg,d2.lines[l][p].points);
-					//d2.lines[l][p].plot();
+					d2.lines[l][p].svg.hide();
 				}
-			}
-		}else{
-			for(p in d2.lines[d2.ptr.layer]){
-				d2.plot(d2.lines[d2.ptr.layer][p].svg,d2.lines[d2.ptr.layer][p].points);
 			}
 		}
 	},
@@ -308,194 +247,258 @@ var d2 = {
 	},
 
 
-	nextLayer:function(){
-		if(d2.ptr.layer < select_flavor.is.length-1){
-			loadLayer(d2.ptr.layer+1);
-		}
-	},
 
-	loadLayer:function(layer_id){
 
-		if(layer_id < select_flavor.is.length){
-		    d2.ptr.layer = layer_id;
-			d2.ptr.step = 0;
+	loadLayer:function(layer_id, forward){
+		console.log("load "+layer_id);
+
+	    d2.ptr.layer = layer_id;
+		
+		if(forward){
 			d2.ptr.polyline = 0;
-			d2.ptr.point = 1;
+			d2.ptr.point = 0;
+			d2.ptr.step = 0;
+		}else{
+			d2.ptr.polyline = d2.lines[layer_id].length-1;
+			d2.ptr.point = d2.lines[layer_id][d2.ptr.polyline].points.length -1;
+			d2.ptr.step = d2.totalPolylineSteps(d2.lines[layer_id], d2.ptr.polyline);
+		}
 
-			//update the polyline colors
-			for(var l = 0; l < d2.lines.length; l++){
+		//update the polyline colors
+		for(var l = 0; l < d2.lines.length; l++){
+			if(d2.all_layers){
 				for(p in d2.lines[l]){
 					if(l < layer_id){
 						d2.visited(d2.lines[l][p].svg);
 					} 
-					if(l >= layer_id) d2.ghost(d2.lines[l][p].svg);
+					if(l >= layer_id){
+						if(forward) d2.ghost(d2.lines[l][p].svg);
+						else d2.visited(d2.lines[l][p].svg);
+					} 
 				}
+			
+			}else{
+				if(l != layer_id) d2.hideLayer(l);
+				else{
+					for(p in d2.lines[l]){
+						if(forward)	d2.ghost(d2.lines[l][p].svg);
+						else d2.visited(d2.lines[l][p].svg);
+						d2.lines[l][p].svg.show();
+					}
+					
+				}
+				
 			}
-
-
-			var pt_from = d2.lines[d2.ptr.layer][d2.ptr.polyline].points[d2.ptr.point-1];
-			var pt_to = d2.lines[d2.ptr.layer][d2.ptr.polyline].points[d2.ptr.point];
-			d2.circle.center(pt_from[0], pt_from[1]);
-			d2.circle.animate(10).center(pt_to[0], pt_to[1]);
-
-			d2.updateInterface();
-			d2.updatePlane();
-
 		}
+
+
+		//var pt_from = d2.lines[d2.ptr.layer][d2.ptr.polyline].points[d2.ptr.point-1];
+		var pt_to = d2.lines[d2.ptr.layer][d2.ptr.polyline].points[d2.ptr.point];
+		//d2.circle.center(pt_from[0], pt_from[1]);
+		d2.circle.animate(10).center(pt_to[0], pt_to[1]);
+	    
+		if(forward) d2.progress.hide();
+		else{ 
+			d2.progress.show();
+			d2.progress.plot(d2.lines[d2.ptr.layer][d2.ptr.polyline].points.slice());
+		}
+
+		ui.updateModelStats();
+		d2.updatePlane();
+
+		return pt_to;
 	},
 
+	getMicroseconds:function(layer_id, x, y){ 
 
-	prevLayer: function(){
-		if(d2.layer > 0){
-			loadLayer(d2.ptr.layer-1);
-		}
+	  //var adj_height = build_env.distance_to_base - (layer_id)*this.material_height; //distance from laser to current laser (
+	  var adj_height = select_flavor.laser.z - (layer_id * select_flavor.material_height); //distance from laser to current laser (
 
+
+	  if(layer_id == 0 && x == 0 && y == 0){ //assume this is a starting block
+	    x = select_flavor.bbox.min.x;
+	    y = select_flavor.bbox.min.y;
+	  }
+
+	    var theta = {
+	      x: rad_to_deg(Math.atan((x - select_flavor.laser.x)/adj_height)) +  90,
+	      y: rad_to_deg(Math.atan((y - select_flavor.laser.y)/adj_height)) +  90.
+	    };  
+
+	    var low = 90 - 35;
+	    var high = 90 + 35;
+
+	      if(theta.x > high || theta.x < low){
+	      console.log("Error - theta out of max range: "+theta.x );
+	      console.log(x, y);
+	    }
+
+	    var ms_per_theta = 10; //this is hardware dependent (2400 - 600 = 1800 1800/180 = 10)
+
+	    var ms = {
+	      x: parseInt(theta.x*ms_per_theta + 600),
+	      y: parseInt(theta.y*ms_per_theta + 600)
+	    };
+	  
+	  	console.log(ms);
+	  	return ms;  
 	},
 
 	nextStep:function(){
 		var layer = d2.ptr.layer;
 		var polylines = d2.lines[layer];
 		var cur_points = polylines[d2.ptr.polyline].points;
+		var move_info = [];
+		var pt_to = [];
 
 		//case 1: move +1 within polyline 
 		if(d2.ptr.point < cur_points.length-1){
 			d2.ptr.point++;
-			var p_to = cur_points[d2.ptr.point];
-			d2.progress.plot(cur_points.slice(0, d2.ptr.point));
+			d2.ptr.step++;
+
+			console.log("in line", d2.ptr);
+			pt_to = cur_points[d2.ptr.point];
+
+			d2.progress.plot(cur_points.slice(0, d2.ptr.point+1));
+			d2.progress.show();
 			d2.progress.front();
-			d2.circle.animate(10).center(p_to[0], p_to[1]);
-		}else if(d2.ptr.polyline < polylines.length-1){
-			//case 2: move to next polyline on same layer
-			d2.ptr.polyline++;
-			d2.ptr.point = 1;
-			var pt_from = d2.lines[d2.ptr.layer][d2.ptr.polyline].points[d2.ptr.point-1];
-			var pt_to = d2.lines[d2.ptr.layer][d2.ptr.polyline].points[d2.ptr.point];
-
-
-			d2.visited(polylines[d2.ptr.polyline-1].svg);
-			d2.circle.center(pt_from[0], pt_from[1]);
 			d2.circle.animate(10).center(pt_to[0], pt_to[1]);
-
-		}else if(layer < d2.lines.length -1){
-			d2.loadLayer(layer+1);
-		}
-
-		d2.updateInterface();
-		d2.updatePlane();
-
-	},
-
-	prevStep: function(){
-		if(d2.step > 0){ 
-			d2.step--;
-			d2.drawStep({fwd: false, reset:false});
-
-		}else{
-		 	if(d2.layer > 0){
-				d2.clearLayerPaths();
-				d2.layer--;
-				d2.addGhostPaths();
-				d2.addLayerPaths();
-				d2.step = select_flavor.is[d2.layer].length -1;
-				d2.drawStep({fwd: false, reset:false});
-				d2.updatePlane();
-			}
-		}
-	},
-
-
-	getLastInst:function(l, s){
-		s = s -1;
-		if(s < 0){
-			l--;
-			if(l < 0) return null;
-			s = select_flavor.is[l].length -1;
-		}
-		return select_flavor.is[l][s];
-	},
-
-	getNextInst:function(l, s){
-	  s = s + 1;
-	  var inst = null;
-	  var ins = select_flavor.is;
-
-	  //case inst is at end of layer
-	  if(s >= ins[l].length){
-	  	l++;
-	  	s = 0;
-	  	if(l >= ins.length()) return null;
-	  }
-	  return select_flavor.is[l][s];
-	},
-
-	/***
-	inc - {next: true/false, forward: true/false, new_layer: true/false}
-	*/
-	drawStep:function(cause){
-
-
-		if(select_flavor.is && select_flavor.is.length > 0){
-			
-
-			var inst = select_flavor.is[d2.layer][d2.step];
-			// var li = d2.getLastInst(d2.layer, d2.step); 
-		 //    var ni = d2.getNextInst(d2.layer, d2.step);
-
-
-			// var d = 0;
-			// if(inst.type == "G1" && !cause.reset && cause.fwd){
-			// 	d2.addPath(inst, li, ni);
-			// 	d = inst.obj.d_traveling;
-			// }
-		
-			// if(!cause.reset && !cause.fwd && (ni != null && ni.type == "G1")){
-			// 	d2.removePath(ni);
-			// 	d = ni.obj.d_traveling;
-			// }
-
-			// var polylist = [];
-			// for(var p in d2.path){
-			// 	polylist.push(d2.path[p].join(" "));
-			// }
-
-				
-			// var anitime = d * (10); //20ms/mm
-
-			// for(var pl in d2.polylines){		
-			// 	d2.polylines[pl].plot(polylist[pl]);
-			// 	d2.polylines[pl].front();
-			// }
-
-			//if(ni != null){
-			  //if(cause.reset) d2.circle.center(last.to.x,last.to.y);
-			   d2.circle.animate(10).center(inst.to.x,inst.to.y);
-			//}
-
-		
 			d2.circle.front();
 
-			(inst.ext) ? d2.circle.attr({fill: '#0f0'}) :d2.circle.attr({fill: '#f00'});
-			d2.updateInterface();
+			move_info.l = 1;
+			move_info.ms = d2.getMicroseconds(layer, pt_to[0], pt_to[1]);
+
+
+		}else if(d2.ptr.polyline < polylines.length-1){
+			//case 2: move to next polyline on same layer
+			//var pt_from = d2.lines[d2.ptr.layer][d2.ptr.polyline].points[d2.ptr.point-1];
+
+			d2.ptr.polyline++;
+			d2.ptr.point = 0;
+			d2.ptr.step++;
+
+			console.log("next poly", d2.ptr);
+
+			pt_to = d2.lines[d2.ptr.layer][d2.ptr.polyline].points[d2.ptr.point];
+
+			d2.progress.hide();
+			d2.visited(polylines[d2.ptr.polyline-1].svg);
+			//d2.circle.center(pt_from[0], pt_from[1]);
+			d2.circle.animate(10).center(pt_to[0], pt_to[1]);
+			d2.circle.front();
+
+			move_info.l = 0;
+			move_info.ms = d2.getMicroseconds(layer, pt_to[0], pt_to[1]);
+
+		}else if(layer < d2.lines.length -1){
+			//case 3: moving to the next layer
+			console.log("next layer", d2.ptr);
+			pt_to = d2.loadLayer(layer+1, true);
+			
+			move_info.l = 0;
+			move_info.ms = d2.getMicroseconds(layer, pt_to[0], pt_to[1]);
+		}else{
+			//case 4: your at the last instruction 
+			console.log("last inst", d2.ptr);
+			move_info.l = 0;
+			pt_to = d2.lines[layer][d2.ptr.polyline].points[d2.ptr.point];
+			move_info.ms = d2.getMicroseconds(layer, pt_to[0], pt_to[1]);
 
 		}
+
+
+		ui.updateModelStats();
+		d2.updatePlane();
+
+		return move_info;
+
 	},
 
-	updateInterface:function(){
-		//$("#layerRange").prop('value', d2.layer);
-		var show_layer = +d2.ptr.layer+1;
-		var show_step = +d2.ptr.step +1;
-		var last_layer = select_flavor.is[select_flavor.is.length-1];
-		var num_instructions = last_layer[last_layer.length-1].id;
+	totalPolylineSteps:function(polylines, p_id){
+			//total all the previous polyline steps to get the current step
+			var steps = 0;
+			for(var i = 0; i <= p_id; i++){
+				steps += polylines[i].points.length;
+			}
+			return (steps -1);	
+	},
 
-		$("#curLayer").text(show_layer);
 
-		//$("#instRange").prop('value', d2.step);
-		$("#curInst").text(d2.step);
+	prevStep: function(){
+		var layer = d2.ptr.layer;
+		var polylines = d2.lines[layer];
+		var cur_points = polylines[d2.ptr.polyline].points;
+		var pt_to = [];
+		var move_info = [];
 
-		var current_i = select_flavor.is[d2.layer][d2.step].id;
-		var p = Math.floor(current_i / num_instructions * 100);
-		$("#percent").text(p+"%");
-	}
+
+		if(d2.ptr.point > 0){
+			//case 1: moving within a polyline
+			//var pt_from = d2.lines[layer][d2.ptr.polyline].points[d2.ptr.point];
+			d2.ptr.point--;
+			d2.ptr.step--;
+			console.log("in line", d2.ptr);
+
+			pt_to = d2.lines[layer][d2.ptr.polyline].points[d2.ptr.point];
+
+			//pop the last point off of cur points and plot the polyline
+			if(d2.ptr.point > 0){
+				d2.progress.plot(cur_points.slice(0, d2.ptr.point));
+				d2.progress.front();
+			} 
+			else d2.progress.hide();
+
+			d2.circle.animate(10).center(pt_to[0], pt_to[1]);
+			d2.circle.front();
+
+			move_info.l = 1;
+			move_info.ms = d2.getMicroseconds(layer, pt_to[0], pt_to[1]);
+
+		}else if(d2.ptr.polyline > 0){
+			//case 2: moving to a new polyline on the same layer
+
+			d2.ptr.polyline--;
+			cur_points = polylines[d2.ptr.polyline].points;
+			d2.ptr.point = cur_points.length-1;
+
+			d2.ptr.step = d2.totalPolylineSteps(polylines, d2.ptr.polyline);		
+			// d2.ghost(polylines[d2.ptr.polyline].svg);
+			// d2.progress.plot(cur_points.slice());
+			// d2.progress.front();
+
+			console.log("new poly", d2.ptr);
+			pt_to = d2.lines[layer][d2.ptr.polyline].points[d2.ptr.point];
+			
+			d2.circle.animate(10).center(pt_to[0], pt_to[1]);
+			d2.circle.front();
+			
+			move_info.l = 0;
+			move_info.ms = d2.getMicroseconds(layer, pt_to[0], pt_to[1]);
+
+		}else if(layer > 0){
+			//case 3: moving to a new layer
+			pt_to = d2.loadLayer(layer-1);
+			console.log("new layer", d2.ptr);
+
+			move_info.l = 0;
+			move_info.ms = d2.getMicroseconds(layer, pt_to[0], pt_to[1]);
+		}else{
+			//case 4: you're at the first instruction
+			console.log("at beginning", d2.ptr);
+			pt_to = d2.lines[0][0].points[0];
+			move_info.l = 0;
+			move_info.ms = d2.getMicroseconds(layer, pt_to[0], pt_to[1]);
+		}
+
+
+		ui.updateModelStats();
+		d2.updatePlane();
+
+		return move_info;
+		
+
+	},
+
 };
 
 var d3 ={

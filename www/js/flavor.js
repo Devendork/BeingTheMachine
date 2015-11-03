@@ -54,8 +54,8 @@ function outputFlavor(instructions, diameter, height, laser_to_center, raw, dist
 
     this.updateInstructionOffsets();
 
-    this.a_is = this.arduinoInstructions();     //store instructions as arduino sees them
-    if(!raw) this.is = this.a_is.slice(0);      //if we want to display arduino instructions, copy the array and store as instrucitons
+    // this.a_is = this.arduinoInstructions();     //store instructions as arduino sees them
+    // if(!raw) this.is = this.a_is.slice(0);      //if we want to display arduino instructions, copy the array and store as instrucitons
 
     //RENDER PARAMS
     this.object = this.createObjectFromInstructions(this.is);
@@ -63,19 +63,13 @@ function outputFlavor(instructions, diameter, height, laser_to_center, raw, dist
 
 
   console.log("in model, layer max "+this.is.length);
-  $("#maxLayer").text(this.is.length);
-  document.getElementById("layerRange").max = this.is.length-1;
 
- $("#maxInst").text(this.is[0].length);
-  document.getElementById("instRange").max = this.is[0].length-1;
 
-  $("#force_height").val(this.material_height);
-  $("#force_angle").val(this.laser_to_center);
-  $("#default_height").html(this.material_height);
-  $("#force_halfangle").val(this.half_angle);
-  $("#force_distance").val(this.laser.z);
-  $("#layer_min").val(0);
-  $("#layer_max").val(this.is.length);
+  // $("#force_height").val(this.material_height);
+  // $("#force_angle").val(this.laser_to_center);
+  // $("#default_height").html(this.material_height);
+  // $("#force_halfangle").val(this.half_angle);
+  // $("#force_distance").val(this.laser.z);
 }
 
 outputFlavor.prototype.is = [];
@@ -154,32 +148,32 @@ outputFlavor.prototype.updateInstructionOffsets = function(){
 } 
 
 
-//instructions in arduino format for output
-outputFlavor.prototype.arduinoInstructions = function(){
-  var a_is = [];
+// //instructions in arduino format for output
+// outputFlavor.prototype.arduinoInstructions = function(){
+//   var a_is = [];
 
-  for(var l in this.is){
-      a_is.push([]);
-      for(var i in this.is[l]){
-        var inst = this.is[l][i];
-        var ai = {
-          id: inst.id,
-          z: inst.z,
-          to: inst.to,
-          ext: inst.ext
-        };  
+//   for(var l in this.is){
+//       a_is.push([]);
+//       for(var i in this.is[l]){
+//         var inst = this.is[l][i];
+//         var ai = {
+//           id: inst.id,
+//           z: inst.z,
+//           to: inst.to,
+//           ext: inst.ext
+//         };  
        
-        inst.microseconds = this.toMicroseconds(l, inst.to.x, inst.to.y, inst.z);
-        ai.microseconds = inst.microseconds;
-        ai.to = this.fromMicroseconds(l, inst.microseconds.x, inst.microseconds.y);
-        ai.z = l * this.material_height;
+//         inst.microseconds = this.toMicroseconds(l, inst.to.x, inst.to.y, inst.z);
+//         ai.microseconds = inst.microseconds;
+//         ai.to = this.fromMicroseconds(l, inst.microseconds.x, inst.microseconds.y);
+//         ai.z = l * this.material_height;
 
-        a_is[l].push(ai);
+//         a_is[l].push(ai);
          
-      }
-  }
-  return this.cleanInstructions(a_is);
-}
+//       }
+//   }
+//   return this.cleanInstructions(a_is);
+// }
 
 outputFlavor.prototype.boundingBox = function(){
   var bbox = { min: { x:10000,y:10000,z:10000}, max: { x:-10000,y:-10000,z:-10000} };

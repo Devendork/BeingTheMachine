@@ -1,5 +1,6 @@
 var bt = {
 	macAddress: undefined,
+    alternate: true,
 	
 	init:function(){
 		console.log("init bt");
@@ -33,7 +34,6 @@ var bt = {
 
 
     manageConnection: function(){
-        ui.serial("manage connection");
 
         var connect = function(){
             ui.serial("attempting to connect. " +
@@ -60,8 +60,17 @@ var bt = {
 
     openPort:function(){
         ui.serial("Connected to: "+bt.macAddress);
+        ui.but_connect.text("Disconnect");
+
         bluetoothSerial.subscribe('\n', bt.onData, bt.showError);
         bt.sendData("i");
+
+        //  ui.serial("start playing");
+        //  var playing = setInterval(function(){
+        //     var move_info = d2.nextStep();
+        //     var str = "m "+move_info.ms.x+" "+move_info.ms.y+" "+move_info.l;
+        //     bt.sendData(str);
+        // }, 100);
     },
 
     onData:function(data){
@@ -70,90 +79,97 @@ var bt = {
 
         ui.serial("-> "+ data);
 
-        function startPlaying(){
-        	playing = true;
-        };
+        // function startPlaying(){
+        //         ui.serial("start playing");
+        //         bt.playing = setInterval(function(){
+        //             var move_info = d2.nextStep();
+        //             var str = "m "+move_info.ms.x+" "+move_info.ms.y+" "+move_info.l;
+        //             bt.sendData(str);
+        //         }, 100);
+        // };
 
-        function endPlaying(){
-        	playing = false;
-        };
+        // function endPlaying(){
+        // 	clearInterval(bt.playing);
+        // };
 
         function nextStep(){
-        	d2.nextStep();
-        	bt.sendData('m');
+        	var move_info = d2.nextStep();
+            var str = "m "+move_info.ms.x+" "+move_info.ms.y+" "+move_info.l;
+            //var str;
+            // if(bt.alternate) str = "m 1600 1600 "+move_info.l;
+            // else str = "m 1400 1400 "+move_info.l;
+
+        	bt.sendData(str);
+            // bt.alternate = !bt.alternate;
         };
 
         function prevStep(){
-        	d2.prevStep();
-        	bt.sendData('m');
+        	var move_info = d2.prevStep();
+            var str = "m "+move_info.ms.x+" "+move_info.ms.y+" "+move_info.l;
+        	bt.sendData(str);
         };
 
-        function playForward(){
-        	forward = true;
-        };
+        // function playForward(){
+        // 	forward = true;
+        // };
 
-        function playBackward(){
-        	forward = false;
+        // function playBackward(){
+        // 	forward = false;
 
-        };
+        // };
 
-        switch(data){
-        	case 's': startPlaying(); break;
-        	case 'e': endPlaying(); break;
-        	case 'n': nextStep();break;
-        	case 'p': prevStep();break;
-        	case 'f': playForward();break;
-        	case 'b': playBackward();break;
-        };
+        for(var i = 0, len = data.length; i < len; i++){
+            switch(data[i]){
+            	// case 's': startPlaying(); break;
+            	// case 'e': endPlaying(); break;
+            	case 'n': nextStep();break;
+            	case 'p': prevStep();break;
+            	// case 'f': playForward();break;
+            	// case 'b': playBackward();break;
+            };
+        }
 
         
 
     },
 
-    formatData: function(data){
-    	/*
-    	i xmin xmax ymin ymax: initializes by sending the bounding box positions of the model
-		m x y l: move to x y position with laser on (1) or off (0)
-		b: draw bounding box
-		c: center servos
-		TODO: p: signal path
-		TODO l x : signal layer x
-		TODO s: start playing
-		TODO e: end playing
-		*/
-		var str = "";
+  //   formatData: function(data){
+  //   	/*
+  //   	i xmin xmax ymin ymax: initializes by sending the bounding box positions of the model
+		// m x y l: move to x y position with laser on (1) or off (0)
+		// b: draw bounding box
+		// c: center servos
+		// TODO: p: signal path
+		// TODO l x : signal layer x
+		// TODO s: start playing
+		// TODO e: end playing
+		// */
+		// var str = "";
 
-		function initialize(){
-			//send the initialization command
-        	var bounds = computeArduinoBounds();
-        	str = "i "+bounds.x.min+" "+bounds.x.max+" "+bounds.y.min+" "+bounds.y.max;
-		};
+		// function initialize(){
+		// 	//send the initialization command
+  //       	var bounds = computeArduinoBounds();
+  //       	str = "i "+bounds.x.min+" "+bounds.x.max+" "+bounds.y.min+" "+bounds.y.max;
+		// };
 
-		function moveToStep(){
-			var step_data = select_flavor.is[d2.layer][d2.step];
-			if(step_data.type == "G1"){
-				var l = (step_data.ext) ? 1 : 0;
-        		str = "m "+step_data.obj.microseconds.x+" "+step_data.obj.microseconds.y+" "+l;
-        	}
-		};
+		// function boundingBox(){
+		// 	str = 'b';
+		// };
 
-		function boundingBox(){
-			str = 'b';
-		};
+		// function centerServos(){
+		// 	str = 'c';
+		// }
 
-		function centerServos(){
-			str = 'c';
-		}
+  //   	switch(data){
+  //       	case 'i': initialize(); break;
+  //       	// case 'm': moveToStep(data);  break;
+  //       	// case 'b': boundingBox(); break;
+  //       	// case 'c': centerServos(); break;
+  //           default: str = data;
+  //       };
 
-    	switch(data){
-        	case 'i': initialize(); break;
-        	case 'm': moveToStep(); break;
-        	case 'b': boundingBox(); break;
-        	case 'c': centerServos(); break;
-        };
-
-        return str;
-    },
+  //       return str;
+  //   },
 
     sendData: function(data) { // send data to Arduino
 
@@ -167,16 +183,19 @@ var bt = {
             bt.showError("Failed writing data to Bluetooth peripheral");
         };
 
-        data = bt.formatData(data);
+        //data = bt.formatData(data);
+
+
         if(data != ""){
 	        if(app.has_bt) bluetoothSerial.write(data+'\n', success, failure);
-	        else ui.serial("<- " + data);
+	        //else ui.serial("<- " + data);
 	    }
     },
 
     closePort:function(){
         ui.serial("Disconneting from "+app.macAddress);
-        connectButton.innerHTML = "Connect";
+        app.macAddress = undefined;
+        ui.but_connect.text("Connect to Arduino");
         bluetoothSerial.unsubscribe(
             function(data){
                 ui.serial(data);
