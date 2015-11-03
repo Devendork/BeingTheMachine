@@ -93,7 +93,7 @@ var ui = {
       }else{
           var sampleValues = [];
           for(var i = 0; i < 5; i++){
-              sampleValues[i] = Math.floor(Math.random()*255);
+              sampleValues[i] = Math.random();
           }
           generateModel(sampleValues);
       }
@@ -118,6 +118,7 @@ var ui = {
                  var pixelData = canvas.getContext('2d').getImageData(0, samplePoints[i], 1, 1).data;
                  ui.serial("index: "+samplePoints[i]);
                  sampleValues[i] = (pixelData[0]+pixelData[0]+pixelData[0])/3;
+                 sampleValues[i] /= 255; //convert to floating poitn value
                  ui.serial("data: "+sampleValues[i]);
               }
 

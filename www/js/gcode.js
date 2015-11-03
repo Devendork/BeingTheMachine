@@ -4,7 +4,85 @@ var generateModel = function(pivots){
 	ui.serial("in generate model");
 	var r_min = 100/2.;
 	var r_max = 150/2.;
+	var r_dif = r_max - r_min;
+	var sides = 5;
+	var interp = 5;
+	var twist = 2*Math.PI / sides;
+	var num_layers = interp*(pivots.length-1);
+	twist = twist / num_layers;
+	
+
+	var d_material = 5; //material diameter
+
+	var is = [];
+
+	function addLayer(layer_id, radius, twist_offset){
+		var layer = [];
+		var z = layer_id*this.r_material;
+		var gross_move = 2*Math.PI/sides;
+
+		for(var s = 0; s <sides; s++){
+			var inst = {
+				id: (layer_id*sides)+s,
+				ext: true,
+				to: {x:-1, y:-1},
+				z: z
+			};
+
+			//if this is the first instruction than don't extrude
+			if(s == 0) inst.ext = false;
+
+			var theta = s*gross_move+twist_offset;
+			inst.to.x = radius * Math.cos(theta);
+			inst.to.y = radius * Math.sin(theta);
+		
+			layer.push(inst);
+		}
+
+		//go back to the starting point
+		var inst = {
+			id: (layer_id*sides)+s,
+			ext: true,
+			to: layer[0].to,
+			z: z
+		};
+
+		layer.push(inst);
+
+		return layer;
+	}
 
 
+	//get each pivot value
+	var layer = 0;
+	var rp_last = r_min;
+	var twist_offset = 0;
+	for(var p = 0; p < pivots.length; p++){
+		
+		//rp is the value that we are interpolating to
+		var rp = r_min + pivots[p]*r_dif;
+
+		if(p == 0){
+			is.push(addLayer(layer, rp, twist_offset));
+			layer++;
+		}else{
+			//how much to extend the radius in or out per step;
+			var i_step = (rp - rp_last)/interp; 
+			for(var i = 1; i <= interp ; i++){
+				var rpi = rp_last + i*i_step;
+				twist_offset += twist;
+				is.push(addLayer(layer, rpi, twist_offset));
+				layer++;
+			}
+		}
+		rp_last = rp;
+
+	}
+
+
+
+	select_flavor = new outputFlavor(is, d_material, d_material, 0, render_raw, -1, 30, 0, is.length);
+ 	d2.add(select_flavor);
+ 	d3.add(select_flavor.object);
 
 }

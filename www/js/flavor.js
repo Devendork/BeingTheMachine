@@ -1,3 +1,4 @@
+
 //a new output flavor is created everytime an option changes in the options panel
 function outputFlavor(instructions, diameter, height, laser_to_center, raw, distance_to_wall, half_angle, min, max){
     //MODEL PARAMS
@@ -181,6 +182,7 @@ outputFlavor.prototype.boundingBox = function(){
   for(var l in this.is){
     for(var i in this.is[l]){
       inst = this.is[l][i];
+      
       if(inst.ext){
         bbox.min.x = Math.min(bbox.min.x, inst.to.x);
         bbox.min.y = Math.min(bbox.min.y, inst.to.y);
@@ -191,7 +193,8 @@ outputFlavor.prototype.boundingBox = function(){
       }
     }
   }
-  
+
+
   for(var l in this.is){
     for(var i in this.is[l]){
       inst = this.is[l][i];

@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <widget id="com.example.hello" version="0.0.1" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
-    <name>BTM</name>
+    <name>Plein Air 3D</name>
     <description>
        	An app for fabrication En Plein Air. Generates 3D models from images of the environment and then guides the user to produce those models by hand. 
     </description>

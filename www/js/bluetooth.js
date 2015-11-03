@@ -183,11 +183,17 @@ var bt = {
             bt.showError("Failed writing data to Bluetooth peripheral");
         };
 
-        //data = bt.formatData(data);
 
 
         if(data != ""){
-	        if(app.has_bt) bluetoothSerial.write(data+'\n', success, failure);
+	        if(app.has_bt){
+                if(data == "i"){
+                    var bounds = computeArduinoBounds();
+                    data = "i "+bounds.x.min+" "+bounds.x.max+" "+bounds.y.min+" "+bounds.y.max;
+                }
+
+            } 
+            bluetoothSerial.write(data+'\n', success, failure);
 	        //else ui.serial("<- " + data);
 	    }
     },
