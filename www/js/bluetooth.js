@@ -189,7 +189,6 @@ var bt = {
 	        if(app.has_bt){
 
                 bluetoothSerial.write(data+'\n', success, failure);
-                //ui.serial("<- " + data);
             } 
 	    }
     },

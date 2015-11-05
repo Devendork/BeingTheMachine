@@ -95,14 +95,13 @@ var ui = {
           for(var i = 0; i < 5; i++){
               sampleValues[i] = Math.random();
           }
-          generateModel(sampleValues);
+          var sides = 3+ Math.floor(Math.random()*3);
+          var twist = Math.floor(Math.random()*2) -1;
+          generateModel(sampleValues, sides, twist, Math.random());
       }
 
       function onSuccess(imageURI) {
-          // var image = document.getElementById('myImage');
-          // image.src = imageURI;
-          // ui.serial(image.src);
-          // ui.serial(image.width);
+
 
           function sampleImageForModel() {
               //alert("'" + this.name + "' is " + this.width + " by " + this.height + " pixels in size.");
@@ -113,19 +112,52 @@ var ui = {
 
               var samplePoints = [0, this.height/4., this.height/2., 3*this.height/4., this.height-1];
               var sampleValues = [];
+              var sides = 3;
+              var twist = 1; //cw or ccw twist
 
+              //scan heights for radius
               for(var i = 0; i < samplePoints.length; i++){
                  var pixelData = canvas.getContext('2d').getImageData(this.width/2, samplePoints[i], 1, 1).data;
                  ui.serial("index: "+samplePoints[i]);
-                 sampleValues[i] = (pixelData[0]+pixelData[0]+pixelData[0])/3;
+                 //luminosity grey scale to account for human color perception
+                 sampleValues[i] = 0.21*pixelData[0]+ 0.72*pixelData[1] + 0.07*pixelData[2];
+                 //sampleValues[i] = (pixelData[0]+pixelData[0]+pixelData[0])/3;
                  sampleValues[i] /= 255; //convert to floating poitn value
-                 ui.serial("data: "+sampleValues[i]);
+                 ui.serial("height sample: "+sampleValues[i]);
+              }
+              
+
+              //scan width for varience
+              var min = 255;
+              var max = 0;
+              for(var i = 0; i < this.width; i++){
+                 var pixelData = canvas.getContext('2d').getImageData(i, this.height/2, 1, 1).data;
+                 var g = 0.21*pixelData[0]+ 0.72*pixelData[1] + 0.07*pixelData[2];
+                  if(g > max) max = g;
+                  if(g < min) min = g;
               }
 
-              generateModel(sampleValues);
-              // var pixelData = canvas.getContext('2d').getImageData(10, 10, 1, 1).data;
-              // ui.serial(pixelData[0]);
-              // console.log(pixelData);
+              var diff = max - min;
+              ui.serial("diff: "+diff);
+              if(diff < 100) sides = 3;
+              else if(diff < 160) sides = 4;
+              else sides = 5;
+              ui.serial("width: "+sides);
+
+              var pixelData = canvas.getContext('2d').getImageData(0, 0, 1, 1).data;
+              var top_left = 0.21*pixelData[0]+ 0.72*pixelData[1] + 0.07*pixelData[2];
+              pixelData = canvas.getContext('2d').getImageData(this.width-1, this.height-1, 1, 1).data;
+              var bot_right = 0.21*pixelData[0]+ 0.72*pixelData[1] + 0.07*pixelData[2];
+
+
+              var tightness = (bot_right - top_left) / 255;
+              if(top_left > bot_right){
+                twist = -1;
+                tightness = (top_left - bot_right) / 255;
+              } 
+
+              generateModel(sampleValues, sides, twist, tightness);
+
               return true;
           }
           function loadFailure() {
