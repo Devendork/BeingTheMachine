@@ -81,7 +81,7 @@ var generateModel = function(pivots){
 
 
 
-	select_flavor = new outputFlavor(is, d_material, d_material, 0, render_raw, -1, 30, 0, is.length);
+	select_flavor = new outputFlavor(is, d_material, d_material, 0, render_raw, 500, -1, 0, is.length);
  	d2.add(select_flavor);
  	d3.add(select_flavor.object);
 

@@ -173,7 +173,6 @@ var bt = {
 
     sendData: function(data) { // send data to Arduino
 
-
         var success = function() {
             console.log("success");
             ui.serial("<- " + data);
@@ -186,15 +185,12 @@ var bt = {
 
 
         if(data != ""){
-	        if(app.has_bt){
-                if(data == "i"){
-                    var bounds = computeArduinoBounds();
-                    data = "i "+bounds.x.min+" "+bounds.x.max+" "+bounds.y.min+" "+bounds.y.max;
-                }
-                bluetoothSerial.write(data+'\n', success, failure);
 
+	        if(app.has_bt){
+
+                bluetoothSerial.write(data+'\n', success, failure);
+                //ui.serial("<- " + data);
             } 
-	        //else ui.serial("<- " + data);
 	    }
     },
 

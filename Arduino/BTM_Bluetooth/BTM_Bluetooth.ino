@@ -34,8 +34,8 @@ const int play = A3;
 //laser pin
 const int laser = 12;
 //servo pins
-const int pin_x = 10;
-const int pin_y = 11;
+const int pin_x = 11;
+const int pin_y = 10;
 const int on = LOW;
 const int off = HIGH;
 
@@ -44,12 +44,15 @@ const int off = HIGH;
 boolean initialized = false;
 boolean playing = false;
 boolean playing_bounds = false;
-int rate = 50;
 int velocity = 100; //higher number = longer wait
 int cur_layer = 0;
 int half_angle = 10;
 int bx[4];
 int by[4];
+
+int ctr_x = 1477;
+int ctr_y = 1225;
+
 unsigned long file_pos = 0;
 
 //INPUT
@@ -115,8 +118,8 @@ int rx_len = 0;
 
 void centerServos() {
   digitalWrite(laser, on);
-  servo_x.writeMicroseconds(1500);
-  servo_y.writeMicroseconds(1500);
+  servo_x.writeMicroseconds(ctr_x);
+  servo_y.writeMicroseconds(ctr_y);
 }
 
 void signalEnd() {
@@ -142,40 +145,45 @@ void signalPath() {
 
 //update this to read actual bounds
 void moveToBound() {
-  int x = 0;
-  int y = 0;
-  int counter = 0;
-  int index;
-
-  while (!interrupt) {
-    counter++;
-    index = counter % 4;
-    x = bx[index];
-    y = by[index];
-
-    servo_x.writeMicroseconds(x);
-    servo_y.writeMicroseconds(y);
-    myDelay(2000);
-  }
+//  int x = 0;
+//  int y = 0;
+//  int counter = 0;
+//  int index;
+//
+//  while (!interrupt) {
+//    counter++;
+//    index = counter % 4;
+//    x = bx[index];
+//    y = by[index];
+//
+//    servo_x.writeMicroseconds(x);
+//    servo_y.writeMicroseconds(y);
+//    myDelay(2000);
+//  }
 
 }
 
 void myDelay(int time) {
   int i = 0;
-  boolean hasValue = false;
   while (i < time) {
     if (!interrupt) checkFob();
-    i += rate;
+    i ++;
   }
 }
 
 void moveTo(int x, int  y, int lval) {
 
+   //calculate as offsets from center
+   x -= 1500;
+   y -= 1500;
+   
+   
+  
 
   if (lval == 1) digitalWrite(laser, on);
   else digitalWrite(laser, off);
-  int msx = x;
-  int msy = y;
+  int msx = x + ctr_x;
+  int msy = y + ctr_y;
   int distance = 0;
 
   if (msx < 1120 || msx > 1880) {
@@ -229,18 +237,19 @@ void moveTo(int x, int  y, int lval) {
       }
   
     }
-    else{
-       Serial.println("something else");
-  
+    else{  
       servo_x.writeMicroseconds(msx);
       servo_y.writeMicroseconds(msy);
       myDelay(100);
     }
+    
+    //add an additional delay here for the sculpting example
+    myDelay(100000);
 }
 
 
 void checkFob() {
-  delay(rate);
+  delay(50);
   int states[num_buttons];
   int reset = 400;
   int setValue = false;
@@ -325,6 +334,9 @@ void loop() {
       playing = true;
       playing_bounds = false;
       forward = true;
+      bufferData('n', TX); //get next instruction
+      sendAndReceiveData();
+
     }
 
     //play backward
@@ -334,6 +346,8 @@ void loop() {
       playing = true;
       playing_bounds = false;
       forward = false;
+      bufferData('p', TX); //get next instruction
+      sendAndReceiveData();
     }
 
     //stop playing
@@ -354,20 +368,20 @@ void loop() {
     interrupt = false;
   }
 
-  if (playing) {
-    if (forward) {
-      bufferData('n', TX); //get next instruction
-    } else {
-      bufferData('p', TX); //get prev instruction
-    }
+//  if (playing) {
+//    if (forward) {
+//      bufferData('n', TX); //get next instruction
+//    } else {
+//      bufferData('p', TX); //get prev instruction
+//    }
+//
+//    sendAndReceiveData();
+//
+//  }
 
-    sendAndReceiveData();
-
-  }
-
-  if (playing_bounds) {
-    moveToBound();
-  }
+//  if (playing_bounds) {
+//    moveToBound();
+//  }
 
 
 }
@@ -386,6 +400,7 @@ void bufferData(char c, boolean rx) {
 
 //parse the command and trigger action
 void digestData() {
+  
   interrupt = true;
 
   const char s[2] = " ";
@@ -406,26 +421,28 @@ void digestData() {
     vals[i] = atoi(token);
     i++;
   }
+  
+   Serial.print(*c);
 
 
   if (*c == 'i') {
-  	//initialize i xmin xmax ymin ymax
-  	int x_min = vals[0];
-  	int x_max = vals[1];
-  	int y_min = vals[2];
-  	int y_max = vals[3];
-
-  	bx[0] = x_min;
-  	by[0] = y_min;
-
-  	bx[1] = x_max;
-  	by[1] = y_min;
-
-  	bx[2] = x_max;
-  	by[2] = y_max;
-
-  	bx[3] = x_min;
-  	by[3] = y_max;
+//  	//initialize i xmin xmax ymin ymax
+//  	int x_min = vals[0];
+//  	int x_max = vals[1];
+//  	int y_min = vals[2];
+//  	int y_max = vals[3];
+//
+//  	bx[0] = x_min;
+//  	by[0] = y_min;
+//
+//  	bx[1] = x_max;
+//  	by[1] = y_min;
+//
+//  	bx[2] = x_max;
+//  	by[2] = y_max;
+//
+//  	bx[3] = x_min;
+//  	by[3] = y_max;
 
   	initialized = true;
 
