@@ -97,6 +97,7 @@ var ui = {
           }
           var sides = 3+ Math.floor(Math.random()*3);
           var twist = Math.floor(Math.random()*2) -1;
+          //generateModel([.67, .83, .84, .78, .53], 3, -1, .1);
           generateModel(sampleValues, sides, twist, Math.random());
       }
 
@@ -156,7 +157,7 @@ var ui = {
                 tightness = (top_left - bot_right) / 255;
               } 
 
-              generateModel(sampleValues, sides, twist, tightness);
+            generateModel(sampleValues, sides, twist, tightness);
 
               return true;
           }
